@@ -14,9 +14,6 @@ class Strategy:
     Fixed strategies return:
         strategy(data) -> signal
 
-    Dynamic strategies return:
-        strategy(data, holdings) -> (signal, shares)
-
     Notes
     -----
     These strategies are designed as reference implementations and examples
@@ -24,7 +21,7 @@ class Strategy:
     directly in Backtester instances for quick experimentation.
     """
 
-    def buy_all_fixed():
+    def buy_all():
         """
         Always-return-buy fixed-size strategy.
 
@@ -43,6 +40,7 @@ class Strategy:
 
         return strategy
 
+    
     def price_action_dynamic():
         """
         Create a simple price-action dynamic strategy.
@@ -103,7 +101,7 @@ class Strategy:
 
         return strategy
 
-    def rsi_momentum_fixed(rsi_period: int = 14):
+    def rsi_momentum(rsi_period: int = 14):
         """
         RSI momentum crossover fixed-size strategy.
 
@@ -163,9 +161,9 @@ class Strategy:
 
         return strategy
 
-    def sma_ema_crossover_fixed(fast: int = 12, slow: int = 26):
+    def sma_ema_crossover(fast: int = 12, slow: int = 26):
         """
-        SMA crossover fixed-size strategy.
+        SMA crossover strategy.
 
         Parameters
         ----------
@@ -218,12 +216,11 @@ class Strategy:
 
         return strategy
 
-    def rsi_reversion_fixed(
+    def rsi_reversion(
         rsi_period: int = 14, low_th: float = 30, high_th: float = 70
     ):
         """
-        RSI mean-reversion fixed-size strategy.
-
+        RSI mean-reversion strategy.
         Parameters
         ----------
         rsi_period : int
@@ -276,9 +273,9 @@ class Strategy:
 
         return strategy
 
-    def multi_indicator_fixed(rsi_period: int = 14, sma_long: int = 200):
+    def multi_indicator(rsi_period: int = 14, sma_long: int = 200):
         """
-        Multi-indicator confirmation strategy (fixed-size).
+        Multi-indicator confirmation strategy.
 
         Parameters
         ----------
@@ -339,6 +336,7 @@ class Strategy:
 
         return strategy
 
+    
     def breakout_dynamic(lookback: int = 20, allocation: float = 20000):
         """
         Breakout dynamic strategy.

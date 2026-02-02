@@ -187,21 +187,21 @@ class TestBacktesterInitialization:
 
 
 class TestRunBacktestFixed:
-    """Tests for run_backtest_fixed method."""
+    """Tests for run method."""
 
     def test_backtest_fixed_runs_without_error(
         self, sample_stock_data, buy_and_hold_strategy
     ):
         """Test that backtest runs without errors."""
         bt = Backtester("AAPL", sample_stock_data, buy_and_hold_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         assert len(bt.portfolio.value_history) > 0
 
     def test_backtest_fixed_buy_signal(self, sample_stock_data, buy_all_strategy):
         """Test that buy signals execute trades."""
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         # Should have multiple buy trades
         assert len(bt.portfolio.trade_log) > 0
@@ -211,7 +211,7 @@ class TestRunBacktestFixed:
     def test_backtest_fixed_sell_signal(self, sample_stock_data, buy_all_strategy):
         """Test that portfolio can hold shares for selling."""
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         # After buying, should have shares
         assert bt.portfolio.holdings["AAPL"] > 0
@@ -224,7 +224,7 @@ class TestRunBacktestFixed:
         bt = Backtester(
             "AAPL", sample_stock_data, buy_all_strategy, trade_amount=trade_amount
         )
-        bt.run_backtest_fixed()
+        bt.run()
 
         # First price should be around 100
         first_price = sample_stock_data.df[("Close", "AAPL")].iloc[0]
@@ -243,7 +243,7 @@ class TestRunBacktestFixed:
         bt = Backtester(
             "AAPL", sample_stock_data, buy_all_strategy, transaction_fee=fee
         )
-        bt.run_backtest_fixed()
+        bt.run()
 
         # All trades should include transaction fee
         for _, trade in bt.portfolio.trade_log.iterrows():
@@ -254,7 +254,7 @@ class TestRunBacktestFixed:
     ):
         """Test that portfolio value is recorded at each step."""
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         # Value history should have entries for each trading day
         assert len(bt.portfolio.value_history) > 0
@@ -267,7 +267,7 @@ class TestRunBacktestFixed:
     ):
         """Test that strategy signals are respected."""
         bt = Backtester("AAPL", sample_stock_data, buy_on_dip_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         # Strategy buys on dips (price < 110)
         assert len(bt.portfolio.trade_log) > 0
@@ -277,12 +277,13 @@ class TestRunBacktestFixed:
     ):
         """Test backtest with MultiIndex data (yfinance format)."""
         bt = Backtester("AAPL", sample_stock_data_multiindex, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         assert len(bt.portfolio.value_history) > 0
         assert bt.portfolio.holdings["AAPL"] > 0
 
 
+@DeprecationWarning
 class TestRunBacktestDynamic:
     """Tests for run_backtest_dynamic method."""
 
@@ -415,7 +416,7 @@ class TestGenerateReport:
     def test_generate_report_after_backtest(self, sample_stock_data, buy_all_strategy):
         """Test report generation after running backtest."""
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
         report = bt.generate_report()
 
         assert "final_value" in report
@@ -428,7 +429,7 @@ class TestGenerateReport:
     ):
         """Test that report fields are numeric."""
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
         report = bt.generate_report()
 
         assert isinstance(report["final_value"], (int, float, np.number))
@@ -440,7 +441,7 @@ class TestGenerateReport:
     ):
         """Test report shows positive returns for profitable strategy."""
         bt = Backtester("AAPL", sample_stock_data, buy_on_dip_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
         report = bt.generate_report()
 
         # Should have some report data
@@ -458,7 +459,7 @@ class TestBacktesterIntegration:
             return "buy"
 
         bt = Backtester("AAPL", sample_stock_data, strategy)
-        bt.run_backtest_fixed()
+        bt.run()
         report = bt.generate_report()
 
         # Should have valid report with at least 1 buy trade
@@ -477,7 +478,7 @@ class TestBacktesterIntegration:
         bt_fixed = Backtester("AAPL", sample_stock_data, fixed_strategy)
         bt_dynamic = Backtester("AAPL", sample_stock_data, dynamic_strategy)
 
-        bt_fixed.run_backtest_fixed()
+        bt_fixed.run()
         bt_dynamic.run_backtest_dynamic()
 
         assert len(bt_fixed.portfolio.value_history) > 0
@@ -494,8 +495,8 @@ class TestBacktesterIntegration:
             "AAPL", sample_stock_data, buy_all_strategy, initial_cap=1_000_000
         )
 
-        bt_small.run_backtest_fixed()
-        bt_large.run_backtest_fixed()
+        bt_small.run()
+        bt_large.run()
 
         # Both should complete successfully
         assert len(bt_small.portfolio.value_history) > 0
@@ -509,7 +510,7 @@ class TestBacktesterIntegration:
     def test_backtest_trade_log_consistent(self, sample_stock_data, buy_all_strategy):
         """Test that trade log is consistent with portfolio state."""
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         trade_log = bt.portfolio.trade_log
         assert len(trade_log) > 0
@@ -540,7 +541,7 @@ class TestEdgeCasesBacktester:
         stock_data = StockData(df)
 
         bt = Backtester("AAPL", stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         assert len(bt.portfolio.value_history) >= 1
 
@@ -553,12 +554,12 @@ class TestEdgeCasesBacktester:
         bt = Backtester("AAPL", sample_stock_data, error_strategy)
 
         with pytest.raises(ValueError, match="Strategy error"):
-            bt.run_backtest_fixed()
+            bt.run()
 
     def test_backtest_zero_trade_amount(self, sample_stock_data, buy_all_strategy):
         """Test backtest with zero trade amount."""
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy, trade_amount=0)
-        bt.run_backtest_fixed()
+        bt.run()
 
         # Should not hold shares with zero trade amount
         assert bt.portfolio.holdings["AAPL"] == 0
@@ -574,7 +575,7 @@ class TestEdgeCasesBacktester:
             initial_cap=10_000,
             trade_amount=100_000,
         )
-        bt.run_backtest_fixed()
+        bt.run()
 
         # Should adapt to available capital
         assert len(bt.portfolio.trade_log) >= 0
@@ -588,7 +589,7 @@ class TestEdgeCasesBacktester:
             initial_cap=10_000,
             transaction_fee=1000,
         )
-        bt.run_backtest_fixed()
+        bt.run()
 
         # Fees should prevent many trades
         assert len(bt.portfolio.trade_log) >= 0
@@ -610,7 +611,7 @@ class TestEdgeCasesBacktester:
         stock_data = StockData(df)
 
         bt = Backtester("AAPL", stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         # Should complete without error
         assert len(bt.portfolio.value_history) > 0
@@ -626,7 +627,7 @@ class TestBacktesterPortfolioIntegration:
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy)
 
         initial_cash = bt.portfolio.cash
-        bt.run_backtest_fixed()
+        bt.run()
 
         # Cash should have changed (trades were made)
         assert bt.portfolio.cash != initial_cash or bt.portfolio.holdings["AAPL"] == 0
@@ -636,7 +637,7 @@ class TestBacktesterPortfolioIntegration:
     ):
         """Test that portfolio value history is populated by backtest."""
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         assert len(bt.portfolio.value_history) > 0
         # Value history dates should match data dates
@@ -645,7 +646,7 @@ class TestBacktesterPortfolioIntegration:
     def test_portfolio_trade_log_populated(self, sample_stock_data, buy_all_strategy):
         """Test that portfolio trade log is populated by backtest."""
         bt = Backtester("AAPL", sample_stock_data, buy_all_strategy)
-        bt.run_backtest_fixed()
+        bt.run()
 
         assert len(bt.portfolio.trade_log) > 0
         # All trades should reference the correct symbol

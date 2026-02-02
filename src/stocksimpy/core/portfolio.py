@@ -132,6 +132,7 @@ class Portfolio:
             If ``price <= 0``, ``shares < 0``, ``trade_type`` not in
             {'buy','sell'}, or ``transaction_fee < 0``.
         """
+
         trade_type = trade_type.lower().rstrip()
         if price <= 0:
             raise ValueError("price cannot be 0 or less than 0")

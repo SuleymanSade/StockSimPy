@@ -14,17 +14,15 @@ class Performance:
 
     Parameters
     ----------
-    backtester : Backtester
-        A completed Backtester instance with an executed portfolio. The portfolio's
-        value_history and trade_log will be used to compute metrics.
+    portfolio : Portfolio
+        The portfolio object from the backtester. That contains all the value
+        history and trade log needed for calculations.
     risk_free_rate : float, optional
         Annual risk-free rate used for Sharpe ratio and other risk-adjusted
         calculations. Expressed as a decimal (e.g., 0.02 for 2%). Default is 0.02.
 
     Attributes
     ----------
-    backtester : Backtester
-        Reference to the underlying Backtester instance.
     portfolio : Portfolio
         The portfolio object from the backtester.
     symbol : str
@@ -44,17 +42,35 @@ class Performance:
     Examples
     --------
     >>> bt = Backtester('AAPL', stock_data, strategy)
-    >>> bt.run_backtest_fixed()
-    >>> perf = Performance(bt, risk_free_rate=0.02)
+    >>> btres = bt.run()
+    >>> perf = Performance(btres.portfolio, risk_free_rate=0.02)
     >>> report = perf.generate_risk_report()
     >>> print(f"Sharpe Ratio: {report['Sharpe Ratio']:.2f}")
+    
+    or using the BacktestResult shortcut:
+    
+    >>> bt = Backtester('MSFT', stock_data, strategy)
+    >>> btres = bt.run()
+    >>> perf = btres.get_performance()
+    >>> sharpe = perf.calc_sharpe_ratio()
+    >>> print(f"Sharpe Ratio: {sharpe:.2f}")
     """
 
-    def __init__(self, backtester, risk_free_rate: float = 0.02):
-        self.backtester = backtester
-        self.portfolio = backtester.portfolio
-        self.symbol = backtester.symbol
+    def __init__(self, portfolio, risk_free_rate: float = 0.02):
+        self.portfolio = portfolio
+        self.symbol = portfolio.symbol
         self.risk_free_rate = risk_free_rate
+        
+    def change_risk_free_rate(self, new_rate: float):
+        """
+        Update the annual risk-free rate used in calculations.
+
+        Parameters
+        ----------
+        new_rate : float
+            New annual risk-free rate as a decimal (e.g., 0.03 for 3%).
+        """
+        self.risk_free_rate = new_rate
 
     def calc_daily_returns(self) -> pd.Series:
         """
@@ -119,7 +135,7 @@ class Performance:
         - Formula: ``(1 + total_return) ** (365.25 / days) - 1``
         """
         total_return = self.calc_total_return()
-        # For some reason days include all the days from start to end, including weekend official holidays, etc.
+        # The dates include weekends and holidays as it is a time based dataframe
         days = self.portfolio.date_length
         if days == 0:
             return 0.0
@@ -201,7 +217,7 @@ class Performance:
 
         return max_drawdown
 
-    def calc_sharpe_ratio(self) -> float:
+    def calc_sharpe_ratio(self, risk_free_rate: float = None) -> float:
         """
         Calculate the annualized Sharpe ratio.
 
@@ -235,6 +251,10 @@ class Performance:
         >>> if sharpe > 1.0:
         ...     print("Good risk-adjusted performance")
         """
+        risk_free_rate = (
+            self.risk_free_rate if risk_free_rate is None else risk_free_rate
+        )
+        
         daily_returns = self.calc_daily_returns()
 
         if daily_returns.empty or daily_returns.std() == 0:
@@ -245,7 +265,7 @@ class Performance:
 
         # 2. Adjust annual risk-free rate to daily rate
         # Daily risk-free rate = (1 + R)^(1/T) - 1
-        daily_risk_free_rate = (1 + self.risk_free_rate) ** (
+        daily_risk_free_rate = (1 + risk_free_rate) ** (
             1 / annualization_factor
         ) - 1
 
@@ -258,41 +278,43 @@ class Performance:
         return sharpe_ratio * np.sqrt(annualization_factor)
 
     # TODO: for future implementation, the current version is not correct
-    """
-    def calc_sortino_ratio(self) -> float:
+    def calc_sortino_ratio(self, risk_free_rate: float = None) -> float:
+        """ """
         daily_returns = self.calc_daily_returns()
-        
-        if daily_returns.empty: return 0.0
+
+        if daily_returns.empty:
+            return 0.0
+
+        risk_free_rate = (
+            self.risk_free_rate if risk_free_rate is None else risk_free_rate
+        )
 
         annualization_factor = self._get_annualized_trading_days()
-        # Daily Minimum Acceptable Return (MAR) is set to the daily risk-free rate
-        daily_mar = (1 + self.risk_free_rate)**(1/annualization_factor) - 1
-        
+
+        # Daily acceptable return rate (MAR) is the daily risk-free rate
+        daily_mar = (1 + risk_free_rate) ** (1 / annualization_factor) - 1
+
         # 1. Calculate Downside Deviation (Downside Risk)
         # Identify returns below the MAR (daily risk-free rate)
         downside_returns = daily_returns[daily_returns < daily_mar]
-        
-        # If there are no downside returns, the deviation is 0. 
-        if downside_returns.empty:
-            # If no downside, the ratio is effectively infinite, but we safely return 0.0 or the annualized excess return.
-            # Returning 0.0 ensures safety in case of division by zero later.
-            return (daily_returns.mean() - daily_mar) * annualization_factor
 
-        # Calculate the sum of squared differences only for returns below MAR.
-        # The divisor must be the total number of periods (len(daily_returns)) for the population downside deviation.
-        sum_of_squares = ((downside_returns - daily_mar)**2).sum()
-        downside_deviation = np.sqrt(sum_of_squares / len(daily_returns))
-        
+        # If there are no downside returns, the deviation is 0.
+        if downside_returns.empty:
+            # np.inf is returned if there are no downside returns for safety
+            return np.inf
+
+        downside_diff = np.minimum(downside_returns - daily_mar, 0)
+        downside_deviation = np.sqrt(np.mean(downside_diff**2))
+
         if downside_deviation == 0:
             return 0.0
 
         # 2. Calculate Daily Sortino Ratio
         daily_excess_return = daily_returns.mean() - daily_mar
         sortino_ratio = daily_excess_return / downside_deviation
-        
+
         # 3. Annualize the ratio
-        return sortino_ratio * np.sqrt(annualization_factor)
-    """
+        return sortino_ratio * annualization_factor  # * np.sqrt(annualization_factor)
 
     # TODO: for future implementation
     """
