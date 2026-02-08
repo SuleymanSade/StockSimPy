@@ -1,8 +1,9 @@
-# src/stocksimpy/data_handler.py
+# src/stocksimpy/core/stock_data.py
 from datetime import date, timedelta
 
 import numpy as np
 import pandas as pd
+from typing import Literal
 
 
 class StockData:
@@ -601,7 +602,7 @@ class StockData:
         """
         return self.df.head(n)
 
-    def info(self):
+    def info(self) -> None:
         """
         Display DataFrame information.
 
@@ -609,9 +610,9 @@ class StockData:
         -------
         None
         """
-        return self.df.info()
+        self.df.info()
 
-    def fill_missing(self, method="ffill"):
+    def fill_missing(self, method: Literal["ffill", "bfill"] = "ffill") -> None:
         """
         Fill missing values in DataFrame.
 
@@ -626,10 +627,19 @@ class StockData:
         StockData
             Self for method chaining.
         """
-        self.df.fillna(method=method, inplace=True)
+        if method == "ffill":
+            self.df.ffill(inplace=True)
+        elif method == "bfill":
+            self.df.bfill(inplace=True)
+        else:
+            raise ValueError(
+                method
+                + ' is not a fill_missing method option, use either "ffill" or "bfill"'
+            )
+
         return self
 
-    def check_missing(self):
+    def check_missing(self) -> pd.Series:
         """
         Count missing values per column.
 
@@ -640,10 +650,98 @@ class StockData:
         """
         return self.df.isnull().sum()
 
+    def add_indicator(
+        self,
+        indicator_func: callable,
+        base_col: str,
+        *args,
+        symbol: str = "",
+        overwrite: bool = False,
+        **kwargs,
+    ) -> None:
+        """
+        Add one or more technical indicators to a stock's data.
+
+        This method applies an indicator function to a specified base column
+        (e.g., "close") for a given stock symbol in a MultiIndex DataFrame.
+        The indicator function must return a dictionary mapping indicator names
+        to pandas Series. Each resulting indicator is inserted as a new column
+        under the corresponding stock symbol in the DataFrame.
+
+        You can use ``Indicators`` module from ``stocksimpy`` to generate these
+        indicators quickly.
+
+        Parameters
+        ----------
+        indicator_func : callable
+            Function that computes indicator values. It must accept a pandas
+            Series as its first argument and return a dictionary of the form
+            {str: pandas.Series}, where keys are indicator names and values are
+            Series aligned to the StockData index.
+        base_col : str
+            Base data column to apply the indicator to (e.g., "close", "open").
+        symbol : str, default ""
+            Stock symbol identifying the top-level column in the MultiIndex
+            If not MultiIndex, leave it empty
+            (e.g., "AAPL", "MSFT").
+        overwrite : bool, default False
+            Whether to overwrite existing indicator columns if they already
+            exist under the given stock symbol.
+        *args, **kwargs
+            Additional positional and keyword arguments passed directly to
+            `indicator_func`.
+
+        Returns
+        -------
+        None
+            The method mutates the StockData instance in place by adding new
+            indicator columns.
+
+        Raises
+        ------
+        KeyError
+            If the specified stock or base column does not exist in the data.
+
+        Examples
+        --------
+        >>> def calculate_sma(series, window):
+        ...     return {f"sma_{window}": series.rolling(window).mean()}
+        >>> data.add_indicator(calculate_sma, "close", 20, "AAPL")  # doctest: +SKIP
+
+        >>> def calculate_bands(series, window):
+        ...     sma = series.rolling(window).mean()
+        ...     std = series.rolling(window).std()
+        ...     return {
+        ...         f"bb_upper_{window}": sma + 2 * std,
+        ...         f"bb_lower_{window}": sma - 2 * std,
+        ...     }
+        >>> data.add_indicator(calculate_bands, "close", 20, "MSFT")  # doctest: +SKIP
+        """
+
+        if (base_col, symbol) not in self.df:
+            raise KeyError(
+                f"The key ({base_col}, {symbol}) does NOT exist in the dataframe"
+            )
+
+        series = self.df[(base_col, symbol)]
+
+        result = indicator_func(series, *args, **kwargs)
+
+        new_cols = {}
+
+        for name, values in result.items():
+            col_key = (name, symbol)
+
+            if overwrite or (col_key not in self.df.columns):
+                new_cols[col_key] = values
+
+        new_df = pd.DataFrame(new_cols, index=self.df.index)
+        self.df = pd.concat([self.df, new_df], axis=1)
+
     # --------------------------
     # EXPORT DATA
 
-    def to_csv(self, file_path: str, **kwargs):
+    def to_csv(self, file_path: str, **kwargs) -> str:
         """
         Export DataFrame to CSV file.
 

@@ -66,7 +66,7 @@ Please follow the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) in all interactions.
 ```bash
 src/stocksimpy/ # Main code
             core/ # Backtesting, data loading
-            addons/ # Extra resources, strategies
+            addons/ # Extra resources, strategies, indicators
             utils/ # Tools for analysis, visualizing, performance
 docs/
     source/ # documentation, sphinx docs

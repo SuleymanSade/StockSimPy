@@ -235,3 +235,58 @@ def test_check_missing(sample_valid_df):
     stock_data = StockData(sample_valid_df)
     missing_count = stock_data.check_missing()
     assert all(count == 0 for count in missing_count)
+
+
+def test_add_single_indicator(sample_valid_df):
+    """Test addition of a single indicator"""
+
+    def sma(series, window):
+        return {f"sma_{window}": series.rolling(window).mean()}
+
+    stock_data = StockData(sample_valid_df)
+
+    stock_data.add_indicator(sma, "Close", 3)
+
+    assert "sma_3" in stock_data.df.columns
+    expected = stock_data.df["Close"].rolling(3).mean()
+
+    print(stock_data.df[("sma_3", "")])
+    print(expected)
+
+    pd.testing.assert_series_equal(
+        stock_data.df[("sma_3", "")], expected, check_names=False
+    )
+
+
+def test_add_multiple_indicators(sample_valid_df):
+    """Test adding multiple indicators at once"""
+
+    def bands(series, window):
+        sma = series.rolling(window).mean()
+        std = series.rolling(window).std()
+        return {
+            f"bb_upper_{window}": sma + 2 * std,
+            f"bb_lower_{window}": sma - 2 * std,
+        }
+
+    stock_data = StockData(sample_valid_df)
+
+    stock_data.add_indicator(bands, "Close", 2)
+
+    assert ("bb_upper_2") in stock_data.df.columns
+    assert ("bb_lower_2") in stock_data.df.columns
+
+
+def test_overwrite_true_replaces(sample_valid_df):
+    """Test overwriting when adding indicators with same name"""
+
+    def sma(series, window):
+        return {f"sma_{window}": series.rolling(window).mean()}
+
+    stock_data = StockData(sample_valid_df)
+
+    stock_data.add_indicator(sma, "Close", 3)
+    stock_data.add_indicator(sma, "Close", 2, overwrite=True)
+
+    assert "sma_3" in stock_data.df.columns
+    assert "sma_2" in stock_data.df.columns

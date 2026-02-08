@@ -1,4 +1,4 @@
-# src/stocksimpy/backtester.py
+# src/stocksimpy/core/backtester.py
 
 import pandas as pd
 

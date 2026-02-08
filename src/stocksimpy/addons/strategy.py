@@ -1,4 +1,4 @@
-# src/stocksimpy/strategy.py
+# src/stocksimpy/addons/strategy.py
 
 import pandas as pd
 

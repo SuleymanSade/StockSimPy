@@ -1,4 +1,4 @@
-# src/stocksimpy/performance.py
+# src/stocksimpy/utils/performance.py
 
 import numpy as np
 import pandas as pd
