@@ -19,6 +19,7 @@ If you are new hear, you might want to start with the `Quick Start Guide <quick_
    :maxdepth: 2
    :caption: Contents:
 
+   intro
    quick_start
    overview
    api

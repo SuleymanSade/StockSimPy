@@ -184,11 +184,12 @@ class Backtester:
         Notes
         -----
         - If the close price is zero or missing at a timestep, the computed
-        share count will be zero and no trade will be executed.
+          share count will be zero and no trade will be executed.
+
         - This method mutates the internal portfolio state directly and does
-        not return anything. After execution, use ``generate_report()`` or
-        inspect ``portfolio.value_history`` and ``portfolio.trade_log`` to
-        access results.
+          not return anything. After execution, use ``generate_report()`` or
+          inspect ``portfolio.value_history`` and ``portfolio.trade_log`` to
+          access results.
 
         Examples
         --------
@@ -232,7 +233,8 @@ class Backtester:
         ``(df, holdings)`` where:
 
         - ``df`` is the historical DataFrame up to the current timestamp
-        (filtered to ``self.symbol`` for MultiIndex data).
+          (filtered to ``self.symbol`` for MultiIndex data).
+
         - ``holdings`` is the current number of shares held.
 
         The strategy must return a tuple ``(signal, shares)``, where ``shares``
@@ -241,12 +243,15 @@ class Backtester:
         Notes
         -----
         - The portfolio is updated in place. This method does not return a value.
+
         - Any strategy that returns a non-tuple or a tuple of incorrect length
-        will raise a TypeError.
+          will raise a TypeError.
+
         - All exceptions raised inside the strategy propagate directly to the
-        caller, allowing debugging of strategy logic.
+          caller, allowing debugging of strategy logic.
+
         - The DataFrame slice passed to the strategy includes *all* history up
-        to the current timestamp, enabling rolling-window or stateful logic.
+          to the current timestamp, enabling rolling-window or stateful logic.
 
         Returns
         -------
@@ -304,10 +309,12 @@ class Backtester:
             A dictionary with keys:
 
             - ``'final_value'`` (float): Final portfolio value (cash + stock value).
+
             - ``'total_return_percent'`` (float): Percentage return from initial
-            capital (e.g., 15.5 for 15.5% return).
+              capital (e.g., 15.5 for 15.5% return).
+
             - ``'number_of_trades'`` (int): Total number of trades executed
-            during the backtest.
+              during the backtest.
 
         Examples
         --------

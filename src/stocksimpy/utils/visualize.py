@@ -1,4 +1,6 @@
 # src/stocksimpy/utils/visualize.py
+from typing import Any
+
 import matplotlib.pyplot as plt
 
 
@@ -38,7 +40,7 @@ class Visualize:
     def __init__(self, backtester):
         self.backtester = backtester
 
-    def visualize_backtest(self) -> plt:
+    def visualize_backtest(self) -> Any:
         """
         Plot the backtest price, portfolio value, and executed trades.
 

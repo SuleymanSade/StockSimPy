@@ -8,4 +8,4 @@ This project is still early in its development. The API may evolve as more featu
 
 Community input is central to shaping the library. Any suggestions, bug reports, strategy ideas, or architectural improvements are genuinely welcome. Whether you're an experienced quant or experimenting for the first time, contributions of all kinds help the project grow in the right direction.
 
-Please don't hesitate to put on an issues on the [Github](https://github.com/SuleymanSade/stocksimpy) for any improvement that you would like to see in stocksimpy.
+Please don't hesitate to put on an issues on the https://github.com/SuleymanSade/stocksimpy for any improvement that you would like to see in stocksimpy.

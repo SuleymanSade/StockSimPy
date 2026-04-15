@@ -1,6 +1,7 @@
 # src/stocksimpy/core/portfolio.py
 
 from collections import defaultdict
+from typing import DefaultDict
 
 import pandas as pd
 
@@ -23,7 +24,7 @@ class Portfolio:
     def __init__(self, initial_cap: float = 100_000):
         self.initial_cap = initial_cap
         self.cash = initial_cap
-        self.holdings = defaultdict(
+        self.holdings: DefaultDict[str, int] = defaultdict(
             int
         )  # To prevent code from crashing if a non-initialized symbol is tried to accessed
 

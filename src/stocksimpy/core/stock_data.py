@@ -1,9 +1,9 @@
 # src/stocksimpy/core/stock_data.py
 from datetime import date, timedelta
+from typing import Any, Callable, Dict, Literal, Optional
 
 import numpy as np
 import pandas as pd
-from typing import Literal
 
 
 class StockData:
@@ -318,9 +318,9 @@ class StockData:
     def from_yfinance(
         cls,
         tickers: list,
-        start_date: date = None,
-        end_date: date = None,
-        days_before: int = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        days_before: Optional[int] = None,
     ):
         """
         Load stock data from Yahoo Finance.
@@ -381,12 +381,10 @@ class StockData:
 
             return cls(data)
         except ImportError:
-            raise ImportError(
-                """
+            raise ImportError("""
                 yfinance is not installed. Install it to use Yahoo Finance loaders.
                 try using: `pip install yfinance`
-                """
-            )
+                """)
 
     @classmethod
     def from_dataframe(cls, df: pd.DataFrame):
@@ -612,7 +610,7 @@ class StockData:
         """
         self.df.info()
 
-    def fill_missing(self, method: Literal["ffill", "bfill"] = "ffill") -> None:
+    def fill_missing(self, method: Literal["ffill", "bfill"] = "ffill") -> "StockData":
         """
         Fill missing values in DataFrame.
 
@@ -652,9 +650,9 @@ class StockData:
 
     def add_indicator(
         self,
-        indicator_func: callable,
-        base_col: str,
+        indicator,
         *args,
+        base_col: str = "Close",
         symbol: str = "",
         overwrite: bool = False,
         **kwargs,
@@ -673,23 +671,20 @@ class StockData:
 
         Parameters
         ----------
-        indicator_func : callable
-            Function that computes indicator values. It must accept a pandas
-            Series as its first argument and return a dictionary of the form
-            {str: pandas.Series}, where keys are indicator names and values are
-            Series aligned to the StockData index.
-        base_col : str
-            Base data column to apply the indicator to (e.g., "close", "open").
+        indicator : str or callable
+            Either the name of a built-in indicator (e.g., "sma", "rsi") or a
+            custom function that accepts a pandas Series and returns a dict of
+            {str: pandas.Series}.
+        base_col : str, default "Close"
+            Base data column to apply the indicator to.
         symbol : str, default ""
-            Stock symbol identifying the top-level column in the MultiIndex
-            If not MultiIndex, leave it empty
-            (e.g., "AAPL", "MSFT").
+            Stock symbol identifying the top-level column in the MultiIndex.
+            Leave empty ("") if want to apply to all the symbols
         overwrite : bool, default False
-            Whether to overwrite existing indicator columns if they already
-            exist under the given stock symbol.
+            Whether to overwrite existing indicator columns.
         *args, **kwargs
-            Additional positional and keyword arguments passed directly to
-            `indicator_func`.
+            Additional arguments passed directly to the indicator function.
+
 
         Returns
         -------
@@ -717,31 +712,95 @@ class StockData:
         ...     }
         >>> data.add_indicator(calculate_bands, "close", 20, "MSFT")  # doctest: +SKIP
         """
+        if symbol != "":
+            if (base_col, symbol) not in self.df:
+                raise KeyError(
+                    f"The key ({base_col}, {symbol}) does NOT exist in the dataframe"
+                )
 
-        if (base_col, symbol) not in self.df:
-            raise KeyError(
-                f"The key ({base_col}, {symbol}) does NOT exist in the dataframe"
+        if isinstance(indicator, str):
+            indicator = indicator.lower()
+
+            from stocksimpy.addons.indicators import Indicators
+
+            indicator_func = Indicators.get_name_func()[indicator]
+        elif callable(indicator):
+            indicator_func = indicator
+        else:
+            raise TypeError(
+                f"``indicator`` type can only be str or callable, but argument is of type {type(indicator)}"
             )
 
-        series = self.df[(base_col, symbol)]
+        if symbol == "":
+            symbol_it = self.df.columns.get_level_values(1).unique()
+        else:
+            symbol_it = [symbol]
 
-        result = indicator_func(series, *args, **kwargs)
+        for ticker in symbol_it:
+            series = self.df[(base_col, ticker)]
 
-        new_cols = {}
+            result = indicator_func(series, *args, **kwargs)
 
-        for name, values in result.items():
-            col_key = (name, symbol)
+            if not isinstance(result, dict):
+                raise TypeError("Indicator function must return dict[str, pd.Series]")
 
-            if overwrite or (col_key not in self.df.columns):
-                new_cols[col_key] = values
+            new_cols = {}
 
-        new_df = pd.DataFrame(new_cols, index=self.df.index)
-        self.df = pd.concat([self.df, new_df], axis=1)
+            for name, values in result.items():
+                col_key = (name, ticker)
+
+                if overwrite or (col_key not in self.df.columns):
+                    new_cols[col_key] = values
+
+            new_df = pd.DataFrame(new_cols, index=self.df.index)
+            self.df = pd.concat([self.df, new_df], axis=1)
+
+    def add_indicator_all(
+        self, symbol: str = "", base_col: str = "Close", overwrite: bool = False
+    ):
+        """
+        Add all built-in technical indicators to the stock data for one or more symbols.
+
+        This method iterates over all indicator functions in the Indicators module and applies them
+        to the specified base column for each symbol in the DataFrame. It uses the `add_indicator`
+        method for each indicator. If `symbol` is empty, indicators are added for all symbols.
+
+        Parameters
+        ----------
+        symbol : str, optional
+            Stock symbol identifying the top-level column in the MultiIndex. If empty (""), applies to all symbols.
+        base_col : str, optional
+            Base data column to apply the indicators to. Default is "Close".
+        overwrite : bool, optional
+            Whether to overwrite existing indicator columns. Default is False.
+
+        Returns
+        -------
+        None
+            The method mutates the StockData instance in place by adding new indicator columns.
+
+        Examples
+        --------
+        >>> data.add_indicator_all()  # Adds all indicators to all symbols
+        >>> data.add_indicator_all(symbol="AAPL", base_col="Close", overwrite=True)  # Adds all indicators for AAPL, overwriting existing
+        """
+        from stocksimpy.addons.indicators import Indicators
+
+        if symbol == "":
+            tickers = self.df.columns.get_level_values(1).unique()
+        else:
+            tickers = [symbol]
+
+        for ticker in tickers:
+            for indicator in Indicators.get_name_func():
+                self.add_indicator(
+                    indicator, base_col=base_col, symbol=ticker, overwrite=overwrite
+                )
 
     # --------------------------
     # EXPORT DATA
 
-    def to_csv(self, file_path: str, **kwargs) -> str:
+    def to_csv(self, file_path: Optional[str], **kwargs) -> Optional[str]:
         """
         Export DataFrame to CSV file.
 
@@ -869,7 +928,7 @@ class StockData:
         """
         return self.df.to_dict(orient=orient)
 
-    def to_json(self, file_path: str = None, orient="records", **kwargs):
+    def to_json(self, file_path: Optional[str] = None, orient="records", **kwargs):
         """
         Export DataFrame to JSON.
 
@@ -901,7 +960,7 @@ class StockData:
             return file_path
         return json_str
 
-    def to_custom(self, export_func, *args, **kwargs):
+    def to_custom(self, export_func: Callable[..., Any], *args, **kwargs):
         """
         Export using custom function.
 

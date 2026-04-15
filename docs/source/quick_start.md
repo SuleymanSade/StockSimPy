@@ -6,7 +6,6 @@ This guide shows the minimum to load data, create strategy, run backtesting, and
 
 ```bash
 pip install stocksimpy
-pip install yfinance # Optional, but recommended for quick data
 ```
 
 ## Minimal working example (copy & run)

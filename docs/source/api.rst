@@ -27,6 +27,11 @@ API Reference
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: stocksimpy.addons.indicators
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. Utilities
 .. ---------
 

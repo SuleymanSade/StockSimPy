@@ -1,4 +1,5 @@
 docs/build/
+docs/_build/
 venv/
 .venv/
 __pycache__/
@@ -9,3 +10,5 @@ testcode.py
 .eggs
 dist/
 *.egg-info/
+.mypy_cache/
+.vscode/

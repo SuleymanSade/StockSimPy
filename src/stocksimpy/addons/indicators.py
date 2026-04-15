@@ -1,8 +1,9 @@
 # src/stocksimpy/addons/indicators.py
 
-import pandas as pd
-import numpy as np
 import math
+
+import numpy as np
+import pandas as pd
 
 
 class Indicators:
@@ -68,7 +69,7 @@ class Indicators:
     # -----------------------------
     # DIFFERENT TYPES OF EMA
 
-    def calculate_sma(data_series: pd.Series, window: int) -> pd.Series:
+    def calculate_sma(data_series: pd.Series, window: int = 14) -> dict:
         """Calculate the Simple Moving Average (SMA) of a given data series.
 
         Summary
@@ -85,14 +86,15 @@ class Indicators:
 
         Returns
         -------
-        pandas.Series
-            A pandas Series containing the SMA values. The initial ``window - 1`` values will be NaN.
+        dict
+            A dictionary with key ``sma_{window}`` containing a pandas Series with the SMA values.
+            The initial ``window - 1`` values will be NaN.
         """
         Indicators._validate_indicator_inputs(data_series=data_series, window=window)
 
-        return data_series.rolling(window=window).mean()
+        return {f"sma_{window}": data_series.rolling(window=window).mean()}
 
-    def calculate_wma(data_series: pd.Series, window: int) -> pd.Series:
+    def calculate_wma(data_series: pd.Series, window: int = 14) -> dict:
         """Calculates the Weighted Moving Average (WMA) for a pandas Series.
 
         Summary
@@ -109,9 +111,10 @@ class Indicators:
 
         Returns
         -------
-        pd.Series
-            A pandas Series containing the Weighted Moving Average. The first
-            ``window - 1`` values will be NaN.
+
+            dict
+            A dictionary with key ``wma_{window}`` containing a pandas Series with the Weighted Moving Average.
+            The first ``window - 1`` values will be NaN.
         """
         Indicators._validate_indicator_inputs(data_series, window)
 
@@ -128,9 +131,9 @@ class Indicators:
             wma = weighted_sum / weights_total
             wma_series.iloc[i] = wma
 
-        return wma_series
+        return {f"wma_{window}": wma_series}
 
-    def calculate_ema(data_series: pd.Series, window: int) -> pd.Series:
+    def calculate_ema(data_series: pd.Series, window: int = 14) -> dict:
         """Calculates the Exponential Moving Average (EMA) of a data series.
 
         Summary
@@ -146,15 +149,19 @@ class Indicators:
 
         Returns
         -------
-        pd.Series
-            A Series containing the EMA values.
+        dict
+            A dictionary with key ``ema_{window}`` containing a pandas Series with the EMA values.
         """
 
         Indicators._validate_indicator_inputs(data_series=data_series, window=window)
 
-        return data_series.ewm(span=window, adjust=False, min_periods=window).mean()
+        return {
+            f"ema_{window}": data_series.ewm(
+                span=window, adjust=False, min_periods=window
+            ).mean()
+        }
 
-    def wilders_smoothing(data_series: pd.Series, window: int) -> pd.Series:
+    def wilders_smoothing(data_series: pd.Series, window: int = 14) -> dict:
         """Calculate Wilder's Smoothing for a given data series.
 
         Summary
@@ -170,15 +177,20 @@ class Indicators:
 
         Returns
         -------
-        pandas.Series
-            A pandas Series containing the smoothed values. The initial ``window - 1`` values will be NaN.
+        dict
+            A dictionary with key ``wilders_smoothing_{window}`` containing a pandas Series with the smoothed values.
+            The initial ``window - 1`` values will be NaN.
         """
 
         Indicators._validate_indicator_inputs(data_series, window)
 
-        return data_series.ewm(com=window - 1, adjust=False, min_periods=window).mean()
+        return {
+            f"wilders_smoothing_{window}": data_series.ewm(
+                com=window - 1, adjust=False, min_periods=window
+            ).mean()
+        }
 
-    def calculate_dema(data_series: pd.Series, window: int) -> pd.Series:
+    def calculate_dema(data_series: pd.Series, window: int = 14) -> dict:
         """Calculate the Double Exponential Moving Average (DEMA) of a data series.
 
         Summary
@@ -194,8 +206,9 @@ class Indicators:
 
         Returns
         -------
-        pandas.Series
-            A pandas Series containing the DEMA values. The initial ``2*window - 1`` values will be NaN.
+        dict
+            A dictionary with key ``dema_{window}`` containing a pandas Series with the DEMA values.
+            The initial ``2*window - 1`` values will be NaN.
 
         Notes
         -----
@@ -209,12 +222,12 @@ class Indicators:
         if len(data_series) < (2 * window - 1):
             raise ValueError("Input data series length")
 
-        ema1 = Indicators.calculate_ema(data_series, window)
-        ema2 = Indicators.calculate_ema(ema1, window)
+        ema1 = Indicators.calculate_ema(data_series, window)[f"ema_{window}"]
+        ema2 = Indicators.calculate_ema(ema1, window)[f"ema_{window}"]
 
-        return pd.DataFrame({"dema_{window}": (2 * ema1) - ema2})
+        return {f"dema_{window}": (2 * ema1) - ema2}
 
-    def calculate_tema(data_series: pd.Series, window: int) -> pd.Series:
+    def calculate_tema(data_series: pd.Series, window: int = 14) -> dict:
         """Calculate the Triple Exponential Moving Average (TEMA) of a data series.
 
         Summary
@@ -230,8 +243,9 @@ class Indicators:
 
         Returns
         -------
-        pandas.Series
-            A pandas Series containing the TEMA values. The initial ``3*window - 2`` values will be NaN.
+        dict
+            A dictionary with key ``tema_{window}`` containing a pandas Series with the TEMA values.
+            The initial ``3*window - 2`` values will be NaN.
 
         Notes
         -----
@@ -244,13 +258,16 @@ class Indicators:
         if len(data_series) < (3 * window - 2):
             raise ValueError("Input data series length")
 
-        ema1 = Indicators.calculate_ema(data_series, window)
-        ema2 = Indicators.calculate_ema(ema1, window)
-        ema3 = Indicators.calculate_ema(ema2, window)
+        ema1_dict = Indicators.calculate_ema(data_series, window)
+        ema1_series = ema1_dict[f"ema_{window}"]
+        ema2_dict = Indicators.calculate_ema(ema1_series, window)
+        ema2_series = ema2_dict[f"ema_{window}"]
+        ema3_dict = Indicators.calculate_ema(ema2_series, window)
+        ema3_series = ema3_dict[f"ema_{window}"]
 
-        return pd.DataFrame({"tema_{window}": (3 * ema1) - (3 * ema2) + ema3})
+        return {f"tema_{window}": (3 * ema1_series) - (3 * ema2_series) + ema3_series}
 
-    def calculate_hma(data_series: pd.Series, window: int) -> pd.Series:
+    def calculate_hma(data_series: pd.Series, window: int = 14) -> dict:
         """Calculate the Hull Moving Average (HMA) of a data series.
 
         Summary
@@ -267,9 +284,9 @@ class Indicators:
 
         Returns
         -------
-        pandas.Series
-            A pandas Series containing the HMA values. The initial values will be NaN
-            due to the nested EMA calculations.
+        dict
+            A dictionary with key ``hma_{window}`` containing a pandas Series with the HMA values.
+            The initial values will be NaN due to the nested EMA calculations.
 
         Raises
         ------
@@ -287,16 +304,19 @@ class Indicators:
         if window < 2:
             raise ValueError("Window for HMA calculation cannot be less than 2")
 
-        hma = Indicators.calculate_ema(
-            (2 * Indicators.calculate_ema(data_series, window // 2))
-            - Indicators.calculate_ema(data_series, window),
+        half_window_ema = Indicators.calculate_ema(data_series, window // 2)[
+            f"ema_{window // 2}"
+        ]
+        full_window_ema = Indicators.calculate_ema(data_series, window)[f"ema_{window}"]
+        hma_series = Indicators.calculate_ema(
+            (2 * half_window_ema) - full_window_ema,
             int(math.sqrt(window)),
-        )
-        return pd.data({"hma_{window}": hma})
+        )[f"ema_{int(math.sqrt(window))}"]
+        return {f"hma_{window}": hma_series}
 
     # ----------------
 
-    def calculate_rsi(data_series: pd.Series, window: int = 14) -> pd.Series:
+    def calculate_rsi(data_series: pd.Series, window: int = 14) -> dict:
         """Calculate the Relative Strength Index (RSI) of a given data series.
 
         Summary
@@ -313,8 +333,9 @@ class Indicators:
 
         Returns
         -------
-        pandas.Series
-            A pandas Series containing the RSI values. The initial ``window - 1`` values will be NaN.
+        dict
+            A dictionary with key ``rsi_{window}`` containing a pandas Series with the RSI values.
+            The initial ``window - 1`` values will be NaN.
         """
 
         Indicators._validate_indicator_inputs(
@@ -332,12 +353,16 @@ class Indicators:
         loss = loss.abs()
 
         # Use Wilder's smoothing
-        avg_gain = Indicators.wilders_smoothing(gain, window)
-        avg_loss = Indicators.wilders_smoothing(loss, window)
+        avg_gain = Indicators.wilders_smoothing(gain, window)[
+            f"wilders_smoothing_{window}"
+        ]
+        avg_loss = Indicators.wilders_smoothing(loss, window)[
+            f"wilders_smoothing_{window}"
+        ]
 
         rs = avg_gain / avg_loss
 
-        return pd.DataFrame({"rsi_{window}": 100 - (100 / (1 + rs))})
+        return {f"rsi_{window}": 100 - (100 / (1 + rs))}
 
     # -----------------------------
     # DIFFERENT TYPES OF MACD
@@ -368,7 +393,7 @@ class Indicators:
         fast_period: int = 12,
         slow_period: int = 26,
         signal_period: int = 9,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Calculates the Moving Average Convergence Divergence (MACD) indicator.
 
         Summary
@@ -390,30 +415,38 @@ class Indicators:
 
         Returns
         -------
-        pandas.DataFrame
-            A DataFrame containing three Series: 'MACD', 'Signal', and 'Histogram'.
+        dict
+            A dictionary containing three Series: 'macd_line', 'macd_signal', and 'macd_histogram'.
         """
 
         Indicators._validate_macd_inputs(
             data_series, fast_period, slow_period, signal_period, min_data_lenght=1
         )
 
-        ema_fast = Indicators.calculate_ema(data_series, fast_period)
-        ema_slow = Indicators.calculate_ema(data_series, slow_period)
-        signal_line = Indicators.calculate_ema(data_series, signal_period)
+        ema_fast = Indicators.calculate_ema(data_series, fast_period)[
+            f"ema_{fast_period}"
+        ]
+        ema_slow = Indicators.calculate_ema(data_series, slow_period)[
+            f"ema_{slow_period}"
+        ]
 
         macd_line = ema_fast - ema_slow
+        signal_line = Indicators.calculate_ema(macd_line, signal_period)[
+            f"ema_{signal_period}"
+        ]
         macd_histogram = macd_line - signal_line
-        return pd.DataFrame(
-            {"MACD": macd_line, "Signal": signal_line, "Histogram": macd_histogram}
-        )
+        return {
+            "macd_line": macd_line,
+            "macd_signal": signal_line,
+            "macd_histogram": macd_histogram,
+        }
 
     def calculate_wilders_macd(
         data_series: pd.Series,
         fast_period: int = 12,
         slow_period: int = 26,
         signal_period: int = 9,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Calculates the Moving Average Convergence Divergence (MACD) indicator using Wilder's smoothing.
 
         Summary
@@ -435,35 +468,39 @@ class Indicators:
 
         Returns
         -------
-        pandas.DataFrame
-            A DataFrame containing three Series: 'wilders_MACD', 'wilders_Signal', and 'wilders_Histogram'.
+        dict
+            A dictionary containing three Series: 'wilders_macd_line', 'wilders_macd_signal', and 'wilders_macd_histogram'.
         """
 
         Indicators._validate_macd_inputs(
             data_series, fast_period, slow_period, signal_period, min_data_lenght=1
         )
 
-        ema_fast = Indicators.calculate_ema(data_series, fast_period)
-        ema_slow = Indicators.calculate_ema(data_series, slow_period)
+        ema_fast = Indicators.calculate_ema(data_series, fast_period)[
+            f"ema_{fast_period}"
+        ]
+        ema_slow = Indicators.calculate_ema(data_series, slow_period)[
+            f"ema_{slow_period}"
+        ]
 
         macd_line = ema_fast - ema_slow
-        signal_line = Indicators.wilders_smoothing(macd_line, window=signal_period)
+        signal_line = Indicators.wilders_smoothing(macd_line, window=signal_period)[
+            f"wilders_smoothing_{signal_period}"
+        ]
 
         macd_histogram = macd_line - signal_line
-        return pd.DataFrame(
-            {
-                "wilders_MACD": macd_line,
-                "wilders_Signal": signal_line,
-                "wilders_Histogram": macd_histogram,
-            }
-        )
+        return {
+            "wilders_macd_line": macd_line,
+            "wilders_macd_signal": signal_line,
+            "wilders_macd_histogram": macd_histogram,
+        }
 
     def calculate_tema_macd(
         data_series: pd.Series,
         fast_period: int = 12,
         slow_period: int = 26,
         signal_period: int = 9,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Calculate the Triple Exponential Moving Average (TEMA) MACD indicator.
 
         Summary
@@ -484,8 +521,8 @@ class Indicators:
 
         Returns
         -------
-        pandas.DataFrame
-            A DataFrame containing three Series: 'TEMA_MACD', 'TEMA_Signal', and 'TEMA_Histogram'.
+        dict
+            A dictionary containing three Series: 'tema_macd_line', 'tema_macd_signal', and 'tema_macd_histogram'.
 
         Notes
         -----
@@ -499,27 +536,31 @@ class Indicators:
         Indicators._validate_macd_inputs(
             data_series, fast_period, slow_period, signal_period, min_data_lenght=1
         )
-        ema_fast = Indicators.calculate_ema(data_series, fast_period)
-        ema_slow = Indicators.calculate_ema(data_series, slow_period)
+        ema_fast = Indicators.calculate_ema(data_series, fast_period)[
+            f"ema_{fast_period}"
+        ]
+        ema_slow = Indicators.calculate_ema(data_series, slow_period)[
+            f"ema_{slow_period}"
+        ]
 
         macd_line = ema_fast - ema_slow
-        signal_line = Indicators.calculate_tema(macd_line, window=signal_period)
+        signal_line = Indicators.calculate_tema(macd_line, window=signal_period)[
+            f"tema_{signal_period}"
+        ]
 
         macd_histogram = macd_line - signal_line
-        return pd.DataFrame(
-            {
-                "TEMA_MACD": macd_line,
-                "TEMA_Signal": signal_line,
-                "TEMA_Histogram": macd_histogram,
-            }
-        )
+        return {
+            "tema_macd_line": macd_line,
+            "tema_macd_signal": signal_line,
+            "tema_macd_histogram": macd_histogram,
+        }
 
     def calculate_hma_macd(
         data_series: pd.Series,
-        fast_period: pd.Series = 12,
-        slow_period: pd.Series = 26,
+        fast_period: int = 12,
+        slow_period: int = 26,
         signal_period: int = 9,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Calculate the Hull Moving Average (HMA) MACD indicator.
 
         Summary
@@ -540,8 +581,8 @@ class Indicators:
 
         Returns
         -------
-        pandas.DataFrame
-            A DataFrame containing three Series: 'HMA_MACD', 'HMA_Signal', and 'HMA_Histogram'.
+        dict
+            A dictionary containing three Series: 'hma_macd_line', 'hma_macd_signal', and 'hma_macd_histogram'.
 
         Notes
         -----
@@ -555,17 +596,48 @@ class Indicators:
         Indicators._validate_macd_inputs(
             data_series, fast_period, slow_period, signal_period, min_data_lenght=1
         )
-        ema_fast = Indicators.calculate_ema(data_series, fast_period)
-        ema_slow = Indicators.calculate_ema(data_series, slow_period)
+        ema_fast = Indicators.calculate_ema(data_series, fast_period)[
+            f"ema_{fast_period}"
+        ]
+        ema_slow = Indicators.calculate_ema(data_series, slow_period)[
+            f"ema_{slow_period}"
+        ]
 
         macd_line = ema_fast - ema_slow
-        signal_line = Indicators.calculate_hma(macd_line, window=signal_period)
+        signal_line = Indicators.calculate_hma(macd_line, window=signal_period)[
+            f"hma_{signal_period}"
+        ]
 
         macd_histogram = macd_line - signal_line
-        return pd.DataFrame(
-            {
-                "HMA_MACD": macd_line,
-                "HMA_Signal": signal_line,
-                "HMA_Histogram": macd_histogram,
-            }
-        )
+        return {
+            "hma_macd_line": macd_line,
+            "hma_macd_signal": signal_line,
+            "hma_macd_histogram": macd_histogram,
+        }
+
+    def get_name_func() -> dict:
+        """
+        Get a dictionary mapping indicator names to their corresponding calculation functions.
+
+        Returns
+        -------
+        dict
+            A dictionary where keys are indicator names (e.g., 'sma', 'ema', 'rsi') and values are the corresponding
+            static methods of the Indicators class that perform the calculations. All lowercased for consistency.
+        """
+        name_func = {
+            "sma": Indicators.calculate_sma,
+            "dema": Indicators.calculate_dema,
+            "ema": Indicators.calculate_ema,
+            "tema": Indicators.calculate_tema,
+            "hma": Indicators.calculate_hma,
+            "rsi": Indicators.calculate_rsi,
+            "wma": Indicators.calculate_wma,
+            "macd": Indicators.calculate_macd,
+            "wilders_macd": Indicators.calculate_wilders_macd,
+            "tema_macd": Indicators.calculate_tema_macd,
+            "hma_macd": Indicators.calculate_hma_macd,
+            "wilders_smoothing": Indicators.wilders_smoothing,
+        }
+
+        return name_func

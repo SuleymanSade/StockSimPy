@@ -8,11 +8,12 @@ Welcome to **stocksimpy**! This guide will walk you through the core concepts an
 2. [Quick Start](#quick-start)
 3. [Core Concepts](#core-concepts)
 4. [Loading Data](#loading-data)
-5. [Running a Backtest](#running-a-backtest)
-6. [Analyzing Results](#analyzing-results)
-7. [Using Built-in Strategies](#using-built-in-strategies)
-8. [Creating Custom Strategies](#creating-custom-strategies)
-9. [Next Steps](#next-steps)
+5. [Adding Indicators](#adding-indicators)
+6. [Running a Backtest](#running-a-backtest)
+7. [Analyzing Results](#analyzing-results)
+8. [Using Built-in Strategies](#using-built-in-strategies)
+9. [Creating Custom Strategies](#creating-custom-strategies)
+10. [Next Steps](#next-steps)
 
 ---
 
@@ -313,6 +314,37 @@ conn = sqlite3.connect("stock_data.db")
 df = pd.read_sql("SELECT * FROM prices", conn, index_col="Date", parse_dates=True)
 data = StockData(df)
 ```
+
+---
+
+## Adding Indicators
+
+You can add technical indicators to your data for use in strategies:
+
+```python
+from stocksimpy import StockData, Indicators
+
+data = StockData.from_yfinance(["AAPL"], days_before=365)
+
+# Add 20-day SMA
+data.add_indicator(Indicators.sma, base_col = "Close", window=20)
+# Add 14-day RSI
+data.add_indicator(Indicators.rsi, base_col = "Close", window=14)
+```
+
+Indicators module offers many built-in indicators like SMA, EMA, RSI, MACD, etc. You can also add custom indicators by passing a function that takes the data (as a pandas Series) and returns a dictionary of Series, with the keys being the indicator names and the values being the Series.
+
+Here is an example of adding a custom indicator:
+
+```python
+def my_custom_indicator(data: pd.Series) -> dict:
+    # Example: 10-day volatility (standard deviation of returns)
+    returns = data.pct_change()
+    volatility = returns.rolling(10).std()
+    return {'volatility_10d': volatility}
+
+data.add_indicator(my_custom_indicator, base_col="Close")
+``` 
 
 ---
 
@@ -633,7 +665,7 @@ bt_dynamic.run_backtest_dynamic()
 
 1. **Explore the examples:** Check the `examples/` folder for complete working notebooks.
 
-2. **Read the API docs:** Visit the [full API documentation](api.html) for detailed method signatures and parameters.
+2. **Read the API docs:** Visit the [full API documentation](api) for detailed method signatures and parameters.
 
 3. **Test multiple strategies:** Compare different strategies on the same data:
 
@@ -658,7 +690,7 @@ bt_dynamic.run_backtest_dynamic()
 
 5. **Handle real-world data:** Load your own CSV, database, or yfinance data and test on it.
 
-6. **Contribute:** Found a cool strategy? Have an idea? Check [CONTRIBUTING.md](../CONTRIBUTING.md) to contribute back!
+6. **Contribute:** Found a cool strategy? Have an idea? Check [CONTRIBUTING](https://github.com/SuleymanSade/stocksimpy/blob/main/CONTRIBUTING.md) to contribute back!
 
 ---
 
@@ -706,7 +738,7 @@ This usually means:
 ## Additional Resources
 
 - **GitHub:** [github.com/SuleymanSade/stocksimpy](https://github.com/SuleymanSade/stocksimpy)
-- **Contributing:** See [CONTRIBUTING.md](../CONTRIBUTING.md)
-- **Code of Conduct:** See [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)
+- **Contributing:** See [CONTRIBUTING](https://github.com/SuleymanSade/stocksimpy/blob/main/CONTRIBUTING.md)
+- **Code of Conduct:** See [CODE_OF_CONDUCT](https://github.com/SuleymanSade/stocksimpy/blob/main/CODE_OF_CONDUCT.md)
 
 Happy backtesting! 🚀
