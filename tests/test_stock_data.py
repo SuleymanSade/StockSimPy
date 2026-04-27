@@ -324,6 +324,19 @@ def test_add_indicator_base_sma(sample_valid_df):
 
     assert "sma_3" in stock_data.df
 
+def test_all_indicator():
+    stock_data = StockData().generate_mock_data(50)
+
+    stock_data.add_indicator_all("")
+
+    assert "tema_14" in stock_data.df
+
+def test_all_indicator_invalid_key():
+    stock_data = StockData().generate_mock_data(50)
+
+    with pytest.raises(KeyError):
+        stock_data.add_indicator_all("null")
+
 
 def test_add_indicator_base_macd():
     stock_data = StockData.generate_mock_data()

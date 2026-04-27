@@ -712,6 +712,7 @@ class StockData:
         ...     }
         >>> data.add_indicator(calculate_bands, "close", 20, "MSFT")  # doctest: +SKIP
         """
+        
         if symbol != "":
             if (base_col, symbol) not in self.df:
                 raise KeyError(
@@ -946,7 +947,7 @@ class StockData:
         Returns
         -------
         str
-            JSON string if file_path is None, otherwise path to file.
+            JSON string
 
         Raises
         ------
@@ -957,7 +958,6 @@ class StockData:
         if file_path:
             with open(file_path, "w") as f:
                 f.write(json_str)
-            return file_path
         return json_str
 
     def to_custom(self, export_func: Callable[..., Any], *args, **kwargs):

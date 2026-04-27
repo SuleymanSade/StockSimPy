@@ -30,14 +30,6 @@ Welcome to **stocksimpy**! This guide will walk you through the core concepts an
 pip install stocksimpy
 ```
 
-### Install optional dependencies
-
-For convenience when loading data from yfinance:
-
-```bash
-pip install yfinance
-```
-
 ### Verify installation
 
 ```python
@@ -52,7 +44,7 @@ print("stocksimpy is ready!")
 Here's a 30-second backtest:
 
 ```python
-from stocksimpy import StockData, Backtester, Strategy, Performance, Visualize
+from stocksimpy import *
 
 # 1. Load data
 data = StockData.from_yfinance(["AAPL"], days_before=365)
@@ -78,20 +70,21 @@ viz.visualize_backtest().show()
 
 ### StockData
 
-**What it does:** Loads, validates, and manages OHLCV (Open, High, Low, Close, Volume) stock price data.
+**What it does:** Loads, validates, and manages OHLCV (Open, High, Low, Close, Volume) and indicators stock price data.
 
 **Key features:**
 
 - Supports multiple data sources: yfinance, CSV, Excel, SQL, JSON, or pandas DataFrames
 - Validates data integrity (no missing values, duplicate dates, or negative volumes)
 - Handles multi-ticker data automatically
+- Can implement indicators with built-in methods
 
 **Example:**
 
 ```python
 from stocksimpy import StockData
 
-# From yfinance (requires yfinance installed)
+# Directly from yfinance
 data = StockData.from_yfinance(["AAPL", "GOOGL"], days_before=365)
 
 # From CSV file
@@ -101,6 +94,33 @@ data = StockData.from_csv("stock_prices.csv")
 import pandas as pd
 df = pd.read_csv("data.csv", index_col="Date", parse_dates=True)
 data = StockData(df)
+```
+
+### Indicators
+
+**What it does:** Contains calculations for built-in indicators, such as SMA, RSI or MACD line, that can be directly implemented into the ``StockData`` throught ``.add_indicator``
+
+**Key features:**
+
+- Contains a variety of indicator calculations
+    - SMA, WMA, EMA, wilders_smoothing, DEMA, TEMA, HMA, RSI, macd line, wilders_macd, tema_macd, hma_macd
+- Each method returns a dictionary of the calculated values
+
+**Examples:**
+
+```Python
+from stocksimpy import *
+
+# Load Data
+data = StockData.from_yfinance(["AAPL", "GOOGL"], days_before=365)
+
+# Calculates SMA with a window of 20, and adds it as "sma_20" into the data
+data.add_indicator(
+    calculate_sma, "close" 20
+)
+
+# The functions can also be used stand alone
+sma = calculate_sma(data["close", "AAPL"], 20)
 ```
 
 ### Backtester
@@ -139,7 +159,7 @@ bt.run_backtest_dynamic()
 
 ### Strategy
 
-**What it does:** Encapsulates trading logic. Strategies receive historical data and return a signal ('buy', 'sell', or 'hold').
+**What it does:** Encapsulates trading logic. Strategies receive historical data and return a signal ('buy', 'sell', or 'hold'). Remember you can use ``Strategy`` class for built-in strategies.
 
 **Two types:**
 
