@@ -1,6 +1,8 @@
 # src/stocksimpy/core/stock_data.py
+from __future__ import annotations
+
 from datetime import date, timedelta
-from typing import Any, Callable, Dict, Literal, Optional
+from typing import Any, Callable, Dict, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -35,7 +37,7 @@ class StockData:
     >>> data.df.head()  # doctest: +SKIP
     """
 
-    def __init__(self, df: pd.DataFrame = None):
+    def __init__(self, df: Optional[pd.DataFrame] = None) -> None:
         # If no DataFrame is provided, create an empty container.
         if df is None:
             self.df = pd.DataFrame()
@@ -45,7 +47,7 @@ class StockData:
         df = self._process_and_validate(df)
         self.df = df
 
-    def _clean(self, df):
+    def _clean(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Clean and standardize input DataFrame format.
 
@@ -86,7 +88,7 @@ class StockData:
         df.sort_index(inplace=True)
         return df
 
-    def _validate(self, df: pd.DataFrame):
+    def _validate(self, df: pd.DataFrame) -> None:
         """
         Validate DataFrame structure and data integrity.
 
@@ -183,7 +185,7 @@ class StockData:
     # LOAD DATA
 
     @classmethod
-    def generate_mock_data(cls, days: int = 100, seed: int = 42):
+    def generate_mock_data(cls, days: int = 100, seed: int = 42) -> "StockData":
         """
         Generate synthetic OHLCV data for testing.
 
@@ -236,7 +238,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_csv(cls, file_path: str):
+    def from_csv(cls, file_path: str) -> "StockData":
         """
         Load stock data from CSV file.
 
@@ -277,7 +279,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_excel(cls, file_path: str):
+    def from_excel(cls, file_path: str) -> "StockData":
         """
         Load stock data from Excel file.
 
@@ -295,7 +297,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_sql(cls, query: str, connection):
+    def from_sql(cls, query: str, connection: Any) -> "StockData":
         """
         Load stock data from SQL database.
 
@@ -317,11 +319,11 @@ class StockData:
     @classmethod
     def from_yfinance(
         cls,
-        tickers: list,
+        tickers: str | list[str],
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         days_before: Optional[int] = None,
-    ):
+    ) -> "StockData":
         """
         Load stock data from Yahoo Finance.
 
@@ -381,13 +383,15 @@ class StockData:
 
             return cls(data)
         except ImportError:
-            raise ImportError("""
+            raise ImportError(
+                """
                 yfinance is not installed. Install it to use Yahoo Finance loaders.
                 try using: `pip install yfinance`
-                """)
+                """
+            )
 
     @classmethod
-    def from_dataframe(cls, df: pd.DataFrame):
+    def from_dataframe(cls, df: pd.DataFrame) -> "StockData":
         """
         Create StockData from existing DataFrame.
 
@@ -404,7 +408,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_dict(cls, data: dict):
+    def from_dict(cls, data: dict[str, Any]) -> "StockData":
         """
         Create StockData from dictionary.
 
@@ -422,7 +426,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_json(cls, json_data: dict):
+    def from_json(cls, json_data: dict[str, Any]) -> "StockData":
         """
         Create StockData from JSON object.
 
@@ -440,7 +444,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_sqlite(cls, query: str, db_path: str):
+    def from_sqlite(cls, query: str, db_path: str) -> "StockData":
         """
         Load stock data from SQLite database.
 
@@ -468,7 +472,10 @@ class StockData:
         return cls(df)
 
     @staticmethod
-    def auto_loader(source, **kwargs):
+    def auto_loader(
+        source: Union[pd.DataFrame, dict[str, Any], str, tuple[Any, ...]],
+        **kwargs: Any,
+    ) -> "StockData":
         """
         Auto-detect input type and load data.
 
@@ -529,7 +536,7 @@ class StockData:
         elif isinstance(source, tuple):
             if len(source) == 2 and isinstance(source[1], int):
                 ticker, days_before = source
-                return StockData.from_yfinance(ticker=ticker, days_before=days_before)
+                return StockData.from_yfinance(tickers=ticker, days_before=days_before)
             elif (
                 len(source) == 3
                 and isinstance(source[1], date)
@@ -537,7 +544,7 @@ class StockData:
             ):
                 ticker, start_date, end_date = source
                 return StockData.from_yfinance(
-                    ticker=ticker, start_date=start_date, end_date=end_date
+                    tickers=ticker, start_date=start_date, end_date=end_date
                 )
             else:
                 raise ValueError(
@@ -550,7 +557,7 @@ class StockData:
     # -----------------------
     # BASIC INFO AND FUNCTIONALITIES
 
-    def get(self, column: str):
+    def get(self, column: str) -> pd.Series:
         """
         Get a column from the DataFrame.
 
@@ -566,7 +573,7 @@ class StockData:
         """
         return self.df[column]
 
-    def slice(self, start=None, end=None):
+    def slice(self, start: Any = None, end: Any = None) -> pd.DataFrame:
         """
         Slice DataFrame by date range.
 
@@ -584,7 +591,7 @@ class StockData:
         """
         return self.df.loc[start:end]
 
-    def head(self, n=5):
+    def head(self, n: int = 5) -> pd.DataFrame:
         """
         Return first n rows.
 
@@ -650,12 +657,12 @@ class StockData:
 
     def add_indicator(
         self,
-        indicator,
-        *args,
+        indicator: str | Callable[..., dict[str, pd.Series]],
+        *args: Any,
         base_col: str = "Close",
         symbol: str = "",
         overwrite: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """
         Add one or more technical indicators to a stock's data.
@@ -712,7 +719,7 @@ class StockData:
         ...     }
         >>> data.add_indicator(calculate_bands, "close", 20, "MSFT")  # doctest: +SKIP
         """
-        
+
         if symbol != "":
             if (base_col, symbol) not in self.df:
                 raise KeyError(
@@ -758,7 +765,7 @@ class StockData:
 
     def add_indicator_all(
         self, symbol: str = "", base_col: str = "Close", overwrite: bool = False
-    ):
+    ) -> None:
         """
         Add all built-in technical indicators to the stock data for one or more symbols.
 
@@ -801,7 +808,7 @@ class StockData:
     # --------------------------
     # EXPORT DATA
 
-    def to_csv(self, file_path: Optional[str], **kwargs) -> Optional[str]:
+    def to_csv(self, file_path: str, **kwargs: Any) -> str:
         """
         Export DataFrame to CSV file.
 
@@ -829,7 +836,7 @@ class StockData:
         df_to_save.to_csv(file_path, **kwargs)
         return file_path
 
-    def to_excel(self, file_path: str, **kwargs):
+    def to_excel(self, file_path: str, **kwargs: Any) -> str:
         """
         Export DataFrame to Excel file.
 
@@ -848,7 +855,13 @@ class StockData:
         self.df.to_excel(file_path, **kwargs)
         return file_path
 
-    def to_sql(self, table_name: str, connection, if_exists="replace", **kwargs):
+    def to_sql(
+        self,
+        table_name: str,
+        connection: Any,
+        if_exists: str = "replace",
+        **kwargs: Any,
+    ) -> str:
         """
         Export DataFrame to SQL table.
 
@@ -874,7 +887,9 @@ class StockData:
         )
         return table_name
 
-    def to_sqlite(self, table_name: str, db_path: str, if_exists="replace", **kwargs):
+    def to_sqlite(
+        self, table_name: str, db_path: str, if_exists: str = "replace", **kwargs: Any
+    ) -> str:
         """
         Export DataFrame to SQLite database.
 
@@ -913,7 +928,7 @@ class StockData:
         """
         return self.df.copy()
 
-    def to_dict(self, orient="records"):
+    def to_dict(self, orient: str = "records") -> dict[str, Any]:
         """
         Export DataFrame to dictionary.
 
@@ -929,7 +944,12 @@ class StockData:
         """
         return self.df.to_dict(orient=orient)
 
-    def to_json(self, file_path: Optional[str] = None, orient="records", **kwargs):
+    def to_json(
+        self,
+        file_path: Optional[str] = None,
+        orient: str = "records",
+        **kwargs: Any,
+    ) -> str:
         """
         Export DataFrame to JSON.
 
@@ -960,7 +980,9 @@ class StockData:
                 f.write(json_str)
         return json_str
 
-    def to_custom(self, export_func: Callable[..., Any], *args, **kwargs):
+    def to_custom(
+        self, export_func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """
         Export using custom function.
 

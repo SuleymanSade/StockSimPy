@@ -1,7 +1,14 @@
 # src/stocksimpy/utils/performance.py
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pandas as pd
+
+if TYPE_CHECKING:
+    from stocksimpy.core.backtester import Backtester
 
 
 class Performance:
@@ -50,7 +57,7 @@ class Performance:
     >>> print(f"Sharpe Ratio: {report['Sharpe Ratio']:.2f}")
     """
 
-    def __init__(self, backtester, risk_free_rate: float = 0.02):
+    def __init__(self, backtester: "Backtester", risk_free_rate: float = 0.02) -> None:
         self.backtester = backtester
         self.portfolio = backtester.portfolio
         self.symbol = backtester.symbol

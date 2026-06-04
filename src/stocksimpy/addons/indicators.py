@@ -1,6 +1,9 @@
 # src/stocksimpy/addons/indicators.py
 
+from __future__ import annotations
+
 import math
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -18,7 +21,9 @@ class Indicators:
     """
 
     def _validate_indicator_inputs(
-        data_series: pd.Series, window: int, min_data_length: int = 1
+        data_series: pd.Series,
+        window: int,
+        min_data_length: int = 1,
     ) -> None:
         """Validate common inputs for indicator calculations.
 
@@ -69,7 +74,7 @@ class Indicators:
     # -----------------------------
     # DIFFERENT TYPES OF EMA
 
-    def calculate_sma(data_series: pd.Series, window: int = 14) -> dict:
+    def calculate_sma(data_series: pd.Series, window: int = 14) -> dict[str, pd.Series]:
         """Calculate the Simple Moving Average (SMA) of a given data series.
 
         Summary
@@ -94,7 +99,7 @@ class Indicators:
 
         return {f"sma_{window}": data_series.rolling(window=window).mean()}
 
-    def calculate_wma(data_series: pd.Series, window: int = 14) -> dict:
+    def calculate_wma(data_series: pd.Series, window: int = 14) -> dict[str, pd.Series]:
         """Calculates the Weighted Moving Average (WMA) for a pandas Series.
 
         Summary
@@ -133,7 +138,7 @@ class Indicators:
 
         return {f"wma_{window}": wma_series}
 
-    def calculate_ema(data_series: pd.Series, window: int = 14) -> dict:
+    def calculate_ema(data_series: pd.Series, window: int = 14) -> dict[str, pd.Series]:
         """Calculates the Exponential Moving Average (EMA) of a data series.
 
         Summary
@@ -161,7 +166,9 @@ class Indicators:
             ).mean()
         }
 
-    def wilders_smoothing(data_series: pd.Series, window: int = 14) -> dict:
+    def wilders_smoothing(
+        data_series: pd.Series, window: int = 14
+    ) -> dict[str, pd.Series]:
         """Calculate Wilder's Smoothing for a given data series.
 
         Summary
@@ -190,7 +197,9 @@ class Indicators:
             ).mean()
         }
 
-    def calculate_dema(data_series: pd.Series, window: int = 14) -> dict:
+    def calculate_dema(
+        data_series: pd.Series, window: int = 14
+    ) -> dict[str, pd.Series]:
         """Calculate the Double Exponential Moving Average (DEMA) of a data series.
 
         Summary
@@ -227,7 +236,9 @@ class Indicators:
 
         return {f"dema_{window}": (2 * ema1) - ema2}
 
-    def calculate_tema(data_series: pd.Series, window: int = 14) -> dict:
+    def calculate_tema(
+        data_series: pd.Series, window: int = 14
+    ) -> dict[str, pd.Series]:
         """Calculate the Triple Exponential Moving Average (TEMA) of a data series.
 
         Summary
@@ -267,7 +278,7 @@ class Indicators:
 
         return {f"tema_{window}": (3 * ema1_series) - (3 * ema2_series) + ema3_series}
 
-    def calculate_hma(data_series: pd.Series, window: int = 14) -> dict:
+    def calculate_hma(data_series: pd.Series, window: int = 14) -> dict[str, pd.Series]:
         """Calculate the Hull Moving Average (HMA) of a data series.
 
         Summary
@@ -316,7 +327,7 @@ class Indicators:
 
     # ----------------
 
-    def calculate_rsi(data_series: pd.Series, window: int = 14) -> dict:
+    def calculate_rsi(data_series: pd.Series, window: int = 14) -> dict[str, pd.Series]:
         """Calculate the Relative Strength Index (RSI) of a given data series.
 
         Summary
@@ -372,7 +383,7 @@ class Indicators:
         slow_period: int = 26,
         signal_period: int = 9,
         min_data_lenght: int = 1,
-    ):
+    ) -> None:
         Indicators._validate_indicator_inputs(
             data_series,
             window=max(slow_period, signal_period),
@@ -393,7 +404,7 @@ class Indicators:
         fast_period: int = 12,
         slow_period: int = 26,
         signal_period: int = 9,
-    ) -> dict:
+    ) -> dict[str, pd.Series]:
         """Calculates the Moving Average Convergence Divergence (MACD) indicator.
 
         Summary
@@ -446,7 +457,7 @@ class Indicators:
         fast_period: int = 12,
         slow_period: int = 26,
         signal_period: int = 9,
-    ) -> dict:
+    ) -> dict[str, pd.Series]:
         """Calculates the Moving Average Convergence Divergence (MACD) indicator using Wilder's smoothing.
 
         Summary
@@ -500,7 +511,7 @@ class Indicators:
         fast_period: int = 12,
         slow_period: int = 26,
         signal_period: int = 9,
-    ) -> dict:
+    ) -> dict[str, pd.Series]:
         """Calculate the Triple Exponential Moving Average (TEMA) MACD indicator.
 
         Summary
@@ -560,7 +571,7 @@ class Indicators:
         fast_period: int = 12,
         slow_period: int = 26,
         signal_period: int = 9,
-    ) -> dict:
+    ) -> dict[str, pd.Series]:
         """Calculate the Hull Moving Average (HMA) MACD indicator.
 
         Summary
@@ -615,7 +626,8 @@ class Indicators:
             "hma_macd_histogram": macd_histogram,
         }
 
-    def get_name_func() -> dict:
+    @staticmethod
+    def get_name_func() -> dict[str, Callable[..., dict[str, Any]]]:
         """
         Get a dictionary mapping indicator names to their corresponding calculation functions.
 
@@ -625,7 +637,7 @@ class Indicators:
             A dictionary where keys are indicator names (e.g., 'sma', 'ema', 'rsi') and values are the corresponding
             static methods of the Indicators class that perform the calculations. All lowercased for consistency.
         """
-        name_func = {
+        name_func: dict[str, Callable[..., dict[str, Any]]] = {
             "sma": Indicators.calculate_sma,
             "dema": Indicators.calculate_dema,
             "ema": Indicators.calculate_ema,
