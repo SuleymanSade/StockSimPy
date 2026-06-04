@@ -1,4 +1,4 @@
-# from .indicators import Indicators
+from .indicators import Indicators
 from .strategy import Strategy
 
-__all__ = ["Strategy"]
+__all__ = ["Strategy", "Indicators"]

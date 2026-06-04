@@ -4,12 +4,12 @@ repos:
     hooks:
       - id: black
 
-  # - repo: https://github.com/PyCQA/isort
-  #   rev: 5.13.2
-  #   hooks:
-  #     - id: isort
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
 
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.10.0
-  #   hooks:
-  #     - id: mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy

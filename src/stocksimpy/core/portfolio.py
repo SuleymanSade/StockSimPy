@@ -1,6 +1,9 @@
 # src/stocksimpy/core/portfolio.py
 
+from __future__ import annotations
+
 from collections import defaultdict
+from typing import DefaultDict
 
 import pandas as pd
 
@@ -23,7 +26,7 @@ class Portfolio:
     def __init__(self, initial_cap: float = 100_000):
         self.initial_cap = initial_cap
         self.cash = initial_cap
-        self.holdings = defaultdict(
+        self.holdings: DefaultDict[str, int] = defaultdict(
             int
         )  # To prevent code from crashing if a non-initialized symbol is tried to accessed
 
@@ -61,7 +64,7 @@ class Portfolio:
         transaction_fee: float,
         total_amount: float,
         date: pd.Timestamp,
-    ):
+    ) -> None:
         """Logs a trade in the trade_log DataFrame.
 
         Parameters:
@@ -98,7 +101,7 @@ class Portfolio:
         shares: float,
         date: pd.Timestamp,
         transaction_fee: float = 0.000,
-    ):
+    ) -> None:
         """Execute a buy or sell trade, updating cash, holdings, and the trade log.
 
         Parameters
@@ -176,12 +179,16 @@ class Portfolio:
                 symbol, trade_type, price, shares, transaction_fee, total_rev, date
             )
 
-    def update_value(self, current_date, current_prices: dict):
+    def update_value(
+        self,
+        current_date: pd.Timestamp,
+        current_prices: dict[str, float],
+    ) -> None:
         """
         Updates the total value of the portfolio and appends it to value_history.
         This is a corrected version that calculates the total value (cash + holdings).
         """
-        holdings_value = 0
+        holdings_value = 0.0
         for symbol, num_shares in self.holdings.items():
             if symbol in current_prices:
                 holdings_value += num_shares * current_prices[symbol]

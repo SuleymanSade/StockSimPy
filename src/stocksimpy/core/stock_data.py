@@ -1,5 +1,8 @@
-# src/stocksimpy/data_handler.py
+# src/stocksimpy/core/stock_data.py
+from __future__ import annotations
+
 from datetime import date, timedelta
+from typing import Any, Callable, Dict, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -34,7 +37,7 @@ class StockData:
     >>> data.df.head()  # doctest: +SKIP
     """
 
-    def __init__(self, df: pd.DataFrame = None):
+    def __init__(self, df: Optional[pd.DataFrame] = None) -> None:
         # If no DataFrame is provided, create an empty container.
         if df is None:
             self.df = pd.DataFrame()
@@ -44,7 +47,7 @@ class StockData:
         df = self._process_and_validate(df)
         self.df = df
 
-    def _clean(self, df):
+    def _clean(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Clean and standardize input DataFrame format.
 
@@ -85,7 +88,7 @@ class StockData:
         df.sort_index(inplace=True)
         return df
 
-    def _validate(self, df: pd.DataFrame):
+    def _validate(self, df: pd.DataFrame) -> None:
         """
         Validate DataFrame structure and data integrity.
 
@@ -182,7 +185,7 @@ class StockData:
     # LOAD DATA
 
     @classmethod
-    def generate_mock_data(cls, days: int = 100, seed: int = 42):
+    def generate_mock_data(cls, days: int = 100, seed: int = 42) -> "StockData":
         """
         Generate synthetic OHLCV data for testing.
 
@@ -235,7 +238,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_csv(cls, file_path: str):
+    def from_csv(cls, file_path: str) -> "StockData":
         """
         Load stock data from CSV file.
 
@@ -276,7 +279,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_excel(cls, file_path: str):
+    def from_excel(cls, file_path: str) -> "StockData":
         """
         Load stock data from Excel file.
 
@@ -294,7 +297,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_sql(cls, query: str, connection):
+    def from_sql(cls, query: str, connection: Any) -> "StockData":
         """
         Load stock data from SQL database.
 
@@ -316,11 +319,11 @@ class StockData:
     @classmethod
     def from_yfinance(
         cls,
-        tickers: list,
-        start_date: date = None,
-        end_date: date = None,
-        days_before: int = None,
-    ):
+        tickers: str | list[str],
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        days_before: Optional[int] = None,
+    ) -> "StockData":
         """
         Load stock data from Yahoo Finance.
 
@@ -388,7 +391,7 @@ class StockData:
             )
 
     @classmethod
-    def from_dataframe(cls, df: pd.DataFrame):
+    def from_dataframe(cls, df: pd.DataFrame) -> "StockData":
         """
         Create StockData from existing DataFrame.
 
@@ -405,7 +408,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_dict(cls, data: dict):
+    def from_dict(cls, data: dict[str, Any]) -> "StockData":
         """
         Create StockData from dictionary.
 
@@ -423,7 +426,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_json(cls, json_data: dict):
+    def from_json(cls, json_data: dict[str, Any]) -> "StockData":
         """
         Create StockData from JSON object.
 
@@ -441,7 +444,7 @@ class StockData:
         return cls(df)
 
     @classmethod
-    def from_sqlite(cls, query: str, db_path: str):
+    def from_sqlite(cls, query: str, db_path: str) -> "StockData":
         """
         Load stock data from SQLite database.
 
@@ -469,7 +472,10 @@ class StockData:
         return cls(df)
 
     @staticmethod
-    def auto_loader(source, **kwargs):
+    def auto_loader(
+        source: Union[pd.DataFrame, dict[str, Any], str, tuple[Any, ...]],
+        **kwargs: Any,
+    ) -> "StockData":
         """
         Auto-detect input type and load data.
 
@@ -530,7 +536,7 @@ class StockData:
         elif isinstance(source, tuple):
             if len(source) == 2 and isinstance(source[1], int):
                 ticker, days_before = source
-                return StockData.from_yfinance(ticker=ticker, days_before=days_before)
+                return StockData.from_yfinance(tickers=ticker, days_before=days_before)
             elif (
                 len(source) == 3
                 and isinstance(source[1], date)
@@ -538,7 +544,7 @@ class StockData:
             ):
                 ticker, start_date, end_date = source
                 return StockData.from_yfinance(
-                    ticker=ticker, start_date=start_date, end_date=end_date
+                    tickers=ticker, start_date=start_date, end_date=end_date
                 )
             else:
                 raise ValueError(
@@ -551,7 +557,7 @@ class StockData:
     # -----------------------
     # BASIC INFO AND FUNCTIONALITIES
 
-    def get(self, column: str):
+    def get(self, column: str) -> pd.Series:
         """
         Get a column from the DataFrame.
 
@@ -567,7 +573,7 @@ class StockData:
         """
         return self.df[column]
 
-    def slice(self, start=None, end=None):
+    def slice(self, start: Any = None, end: Any = None) -> pd.DataFrame:
         """
         Slice DataFrame by date range.
 
@@ -585,7 +591,7 @@ class StockData:
         """
         return self.df.loc[start:end]
 
-    def head(self, n=5):
+    def head(self, n: int = 5) -> pd.DataFrame:
         """
         Return first n rows.
 
@@ -601,7 +607,7 @@ class StockData:
         """
         return self.df.head(n)
 
-    def info(self):
+    def info(self) -> None:
         """
         Display DataFrame information.
 
@@ -609,9 +615,9 @@ class StockData:
         -------
         None
         """
-        return self.df.info()
+        self.df.info()
 
-    def fill_missing(self, method="ffill"):
+    def fill_missing(self, method: Literal["ffill", "bfill"] = "ffill") -> "StockData":
         """
         Fill missing values in DataFrame.
 
@@ -626,10 +632,19 @@ class StockData:
         StockData
             Self for method chaining.
         """
-        self.df.fillna(method=method, inplace=True)
+        if method == "ffill":
+            self.df.ffill(inplace=True)
+        elif method == "bfill":
+            self.df.bfill(inplace=True)
+        else:
+            raise ValueError(
+                method
+                + ' is not a fill_missing method option, use either "ffill" or "bfill"'
+            )
+
         return self
 
-    def check_missing(self):
+    def check_missing(self) -> pd.Series:
         """
         Count missing values per column.
 
@@ -640,10 +655,160 @@ class StockData:
         """
         return self.df.isnull().sum()
 
+    def add_indicator(
+        self,
+        indicator: str | Callable[..., dict[str, pd.Series]],
+        *args: Any,
+        base_col: str = "Close",
+        symbol: str = "",
+        overwrite: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Add one or more technical indicators to a stock's data.
+
+        This method applies an indicator function to a specified base column
+        (e.g., "close") for a given stock symbol in a MultiIndex DataFrame.
+        The indicator function must return a dictionary mapping indicator names
+        to pandas Series. Each resulting indicator is inserted as a new column
+        under the corresponding stock symbol in the DataFrame.
+
+        You can use ``Indicators`` module from ``stocksimpy`` to generate these
+        indicators quickly.
+
+        Parameters
+        ----------
+        indicator : str or callable
+            Either the name of a built-in indicator (e.g., "sma", "rsi") or a
+            custom function that accepts a pandas Series and returns a dict of
+            {str: pandas.Series}.
+        base_col : str, default "Close"
+            Base data column to apply the indicator to.
+        symbol : str, default ""
+            Stock symbol identifying the top-level column in the MultiIndex.
+            Leave empty ("") if want to apply to all the symbols
+        overwrite : bool, default False
+            Whether to overwrite existing indicator columns.
+        *args, **kwargs
+            Additional arguments passed directly to the indicator function.
+
+
+        Returns
+        -------
+        None
+            The method mutates the StockData instance in place by adding new
+            indicator columns.
+
+        Raises
+        ------
+        KeyError
+            If the specified stock or base column does not exist in the data.
+
+        Examples
+        --------
+        >>> def calculate_sma(series, window):
+        ...     return {f"sma_{window}": series.rolling(window).mean()}
+        >>> data.add_indicator(calculate_sma, "close", 20, "AAPL")  # doctest: +SKIP
+
+        >>> def calculate_bands(series, window):
+        ...     sma = series.rolling(window).mean()
+        ...     std = series.rolling(window).std()
+        ...     return {
+        ...         f"bb_upper_{window}": sma + 2 * std,
+        ...         f"bb_lower_{window}": sma - 2 * std,
+        ...     }
+        >>> data.add_indicator(calculate_bands, "close", 20, "MSFT")  # doctest: +SKIP
+        """
+
+        if symbol != "":
+            if (base_col, symbol) not in self.df:
+                raise KeyError(
+                    f"The key ({base_col}, {symbol}) does NOT exist in the dataframe"
+                )
+
+        if isinstance(indicator, str):
+            indicator = indicator.lower()
+
+            from stocksimpy.addons.indicators import Indicators
+
+            indicator_func = Indicators.get_name_func()[indicator]
+        elif callable(indicator):
+            indicator_func = indicator
+        else:
+            raise TypeError(
+                f"``indicator`` type can only be str or callable, but argument is of type {type(indicator)}"
+            )
+
+        if symbol == "":
+            symbol_it = self.df.columns.get_level_values(1).unique()
+        else:
+            symbol_it = [symbol]
+
+        for ticker in symbol_it:
+            series = self.df[(base_col, ticker)]
+
+            result = indicator_func(series, *args, **kwargs)
+
+            if not isinstance(result, dict):
+                raise TypeError("Indicator function must return dict[str, pd.Series]")
+
+            new_cols = {}
+
+            for name, values in result.items():
+                col_key = (name, ticker)
+
+                if overwrite or (col_key not in self.df.columns):
+                    new_cols[col_key] = values
+
+            new_df = pd.DataFrame(new_cols, index=self.df.index)
+            self.df = pd.concat([self.df, new_df], axis=1)
+
+    def add_indicator_all(
+        self, symbol: str = "", base_col: str = "Close", overwrite: bool = False
+    ) -> None:
+        """
+        Add all built-in technical indicators to the stock data for one or more symbols.
+
+        This method iterates over all indicator functions in the Indicators module and applies them
+        to the specified base column for each symbol in the DataFrame. It uses the `add_indicator`
+        method for each indicator. If `symbol` is empty, indicators are added for all symbols.
+
+        Parameters
+        ----------
+        symbol : str, optional
+            Stock symbol identifying the top-level column in the MultiIndex. If empty (""), applies to all symbols.
+        base_col : str, optional
+            Base data column to apply the indicators to. Default is "Close".
+        overwrite : bool, optional
+            Whether to overwrite existing indicator columns. Default is False.
+
+        Returns
+        -------
+        None
+            The method mutates the StockData instance in place by adding new indicator columns.
+
+        Examples
+        --------
+        >>> data.add_indicator_all()  # Adds all indicators to all symbols
+        >>> data.add_indicator_all(symbol="AAPL", base_col="Close", overwrite=True)  # Adds all indicators for AAPL, overwriting existing
+        """
+        from stocksimpy.addons.indicators import Indicators
+
+        if symbol == "":
+            tickers = self.df.columns.get_level_values(1).unique()
+        else:
+            tickers = [symbol]
+
+        for ticker in tickers:
+            for indicator in Indicators.get_name_func():
+                self.add_indicator(
+                    indicator, base_col=base_col, symbol=ticker, overwrite=overwrite
+                )
+
     # --------------------------
     # EXPORT DATA
 
-    def to_csv(self, file_path: str, **kwargs):
+    def to_csv(self, file_path: str, **kwargs: Any) -> str:
         """
         Export DataFrame to CSV file.
 
@@ -671,7 +836,7 @@ class StockData:
         df_to_save.to_csv(file_path, **kwargs)
         return file_path
 
-    def to_excel(self, file_path: str, **kwargs):
+    def to_excel(self, file_path: str, **kwargs: Any) -> str:
         """
         Export DataFrame to Excel file.
 
@@ -690,7 +855,13 @@ class StockData:
         self.df.to_excel(file_path, **kwargs)
         return file_path
 
-    def to_sql(self, table_name: str, connection, if_exists="replace", **kwargs):
+    def to_sql(
+        self,
+        table_name: str,
+        connection: Any,
+        if_exists: str = "replace",
+        **kwargs: Any,
+    ) -> str:
         """
         Export DataFrame to SQL table.
 
@@ -716,7 +887,9 @@ class StockData:
         )
         return table_name
 
-    def to_sqlite(self, table_name: str, db_path: str, if_exists="replace", **kwargs):
+    def to_sqlite(
+        self, table_name: str, db_path: str, if_exists: str = "replace", **kwargs: Any
+    ) -> str:
         """
         Export DataFrame to SQLite database.
 
@@ -755,7 +928,7 @@ class StockData:
         """
         return self.df.copy()
 
-    def to_dict(self, orient="records"):
+    def to_dict(self, orient: str = "records") -> dict[str, Any]:
         """
         Export DataFrame to dictionary.
 
@@ -771,7 +944,12 @@ class StockData:
         """
         return self.df.to_dict(orient=orient)
 
-    def to_json(self, file_path: str = None, orient="records", **kwargs):
+    def to_json(
+        self,
+        file_path: Optional[str] = None,
+        orient: str = "records",
+        **kwargs: Any,
+    ) -> str:
         """
         Export DataFrame to JSON.
 
@@ -789,7 +967,7 @@ class StockData:
         Returns
         -------
         str
-            JSON string if file_path is None, otherwise path to file.
+            JSON string
 
         Raises
         ------
@@ -800,10 +978,11 @@ class StockData:
         if file_path:
             with open(file_path, "w") as f:
                 f.write(json_str)
-            return file_path
         return json_str
 
-    def to_custom(self, export_func, *args, **kwargs):
+    def to_custom(
+        self, export_func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """
         Export using custom function.
 

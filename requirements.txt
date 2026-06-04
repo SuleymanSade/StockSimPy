@@ -1,4 +1,11 @@
-numpy==1.21
-pandas==1.5
-yfinance==0.2.20
-matplotlib==3.5
+numpy
+pandas
+matplotlib
+yfinance
+black
+isort
+mypy
+pytest
+sphinx
+sphinx-rtd-theme
+pre-commit

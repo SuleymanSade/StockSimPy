@@ -1,4 +1,5 @@
 docs/build/
+docs/_build/
 venv/
 .venv/
 __pycache__/
@@ -7,7 +8,8 @@ __pycache__/
 *.ipynb
 testcode.py
 .eggs
-indicators.py
-test_indicators.py
 dist/
 *.egg-info/
+.mypy_cache/
+.vscode/
+build

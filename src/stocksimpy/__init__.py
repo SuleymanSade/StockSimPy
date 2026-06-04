@@ -1,4 +1,4 @@
-from .addons import Strategy
+from .addons import Strategy, Indicators
 from .core import Backtester, Portfolio, StockData
 from .utils import Performance, Visualize
 
@@ -9,4 +9,5 @@ __all__ = [
     "Performance",
     "Visualize",
     "Portfolio",
+    "Indicators",
 ]

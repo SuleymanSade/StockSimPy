@@ -1,4 +1,8 @@
-# src/stocksimpy/backtester.py
+# src/stocksimpy/core/backtester.py
+
+from __future__ import annotations
+
+from typing import Any, Callable
 
 import pandas as pd
 
@@ -103,11 +107,11 @@ class Backtester:
         self,
         symbol: str,
         data: StockData,
-        strategy,
+        strategy: Callable[..., Any],
         initial_cap: float = 100_000,
         transaction_fee: float = 0.000,
         trade_amount: float = 10_000,
-    ):
+    ) -> None:
         self.data = data.to_dataframe()
         self.strategy = strategy
         self.initial_cap = initial_cap
@@ -122,7 +126,13 @@ class Backtester:
             self.data.index.max() - self.data.index.min()
         ).days
 
-    def _process_trade(self, signal: str, shares: int, price: float, date):
+    def _process_trade(
+        self,
+        signal: str,
+        shares: int,
+        price: float,
+        date: pd.Timestamp,
+    ) -> None:
         """
         Execute a single trade and update the portfolio value.
 
@@ -166,7 +176,7 @@ class Backtester:
 
         self.portfolio.update_value(date, {self.symbol: price})
 
-    def run_backtest_fixed(self):
+    def run_backtest_fixed(self) -> None:
         """
         Execute a backtest using fixed trade amounts for each signal.
 
@@ -184,11 +194,12 @@ class Backtester:
         Notes
         -----
         - If the close price is zero or missing at a timestep, the computed
-        share count will be zero and no trade will be executed.
+          share count will be zero and no trade will be executed.
+
         - This method mutates the internal portfolio state directly and does
-        not return anything. After execution, use ``generate_report()`` or
-        inspect ``portfolio.value_history`` and ``portfolio.trade_log`` to
-        access results.
+          not return anything. After execution, use ``generate_report()`` or
+          inspect ``portfolio.value_history`` and ``portfolio.trade_log`` to
+          access results.
 
         Examples
         --------
@@ -224,7 +235,7 @@ class Backtester:
 
             self._process_trade(signal, shares_to_trade, price, current_date)
 
-    def run_backtest_dynamic(self):
+    def run_backtest_dynamic(self) -> None:
         """
         Execute a backtest using dynamic trade sizes.
 
@@ -232,7 +243,8 @@ class Backtester:
         ``(df, holdings)`` where:
 
         - ``df`` is the historical DataFrame up to the current timestamp
-        (filtered to ``self.symbol`` for MultiIndex data).
+          (filtered to ``self.symbol`` for MultiIndex data).
+
         - ``holdings`` is the current number of shares held.
 
         The strategy must return a tuple ``(signal, shares)``, where ``shares``
@@ -241,12 +253,15 @@ class Backtester:
         Notes
         -----
         - The portfolio is updated in place. This method does not return a value.
+
         - Any strategy that returns a non-tuple or a tuple of incorrect length
-        will raise a TypeError.
+          will raise a TypeError.
+
         - All exceptions raised inside the strategy propagate directly to the
-        caller, allowing debugging of strategy logic.
+          caller, allowing debugging of strategy logic.
+
         - The DataFrame slice passed to the strategy includes *all* history up
-        to the current timestamp, enabling rolling-window or stateful logic.
+          to the current timestamp, enabling rolling-window or stateful logic.
 
         Returns
         -------
@@ -304,10 +319,12 @@ class Backtester:
             A dictionary with keys:
 
             - ``'final_value'`` (float): Final portfolio value (cash + stock value).
+
             - ``'total_return_percent'`` (float): Percentage return from initial
-            capital (e.g., 15.5 for 15.5% return).
+              capital (e.g., 15.5 for 15.5% return).
+
             - ``'number_of_trades'`` (int): Total number of trades executed
-            during the backtest.
+              during the backtest.
 
         Examples
         --------
