@@ -1,8 +1,8 @@
 # stocksimpy
 
-#### Easy Python backtesting for stocks — fast and simple
+## Purpose
 
-stocksimpy lets you prototype trading ideas with minimal boilerplate. Everything is explicit — load data, define rules, run a backtest. No configuration sprawl, no hidden state, and no magic methods.. Perfect for beginners and anyone who wants results fast.
+stocksimpy is created to be a simple and intuitive backtesting library for stock trading strategies. It is designed to be beginner-friendly, allowing users to quickly test and visualize their trading ideas without needing to write complex code. The library provides easy-to-use functions for loading stock data, running backtests, evaluating performance, and visualizing results.
 
 (Disclaimer: This is an early alpha, API might change in the future updates)
 
@@ -10,7 +10,7 @@ stocksimpy lets you prototype trading ideas with minimal boilerplate. Everything
 
 ## 🎯 Quick Features
 
-- Load stock prices from `yfinance` or your own database in seconds.
+- Load stock prices from `yfinance` or your own database.
 - Run fixed or dynamic backtests in just a few lines of code.
 - Built-in example strategies like SMA/EMA crossover, RSI, and price action.
 - Clear and simple design — no hidden magic, everything is easy to read.
@@ -36,7 +36,7 @@ from stocksimpy import StockData, Backtester, Visualize, Performance
 
 ```python
 # If you want to load your own data from .csv, .sqlite or similar, use appropriate functions built into `StockData()`
-data = StockData().from_yfinance([your_stock_symbol], your_starting_date, your_end_date)
+data = StockData.from_yfinance([your_stock_symbol], your_starting_date, your_end_date)
 ```
 
 ### 4. Define Your Strategy
