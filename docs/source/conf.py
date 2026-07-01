@@ -13,9 +13,9 @@ if os.environ.get("READTHEDOCS") != "True":
     sys.path.insert(0, os.path.abspath("../../src"))
 
 project = "stocksimpy"
-copyright = "2025, SuleymanSade"
+copyright = "2026, SuleymanSade"
 author = "SuleymanSade"
-release = "0.1.0"
+release = "0.1.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -37,4 +37,12 @@ exclude_patterns = []
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
-source_suffix = [".rst", ".md"]
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
+
+myst_enable_extensions = [
+    "colon_fence",
+]
+myst_heading_anchors = 3  # This makes all H1, H2, and H3 headers linkable

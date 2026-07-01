@@ -6,15 +6,14 @@ This guide shows the minimum to load data, create strategy, run backtesting, and
 
 ```bash
 pip install stocksimpy
-pip install yfinance # Optional, but recommended for quick data
 ```
 
 ## Minimal working example (copy & run)
 
 ```python
-from stocksimpy import StockData, Backtester, Strategy, Performance, Visualize
+from stocksimpy import *
 
-# Load ~1 year of data (requires yfinance)
+# Load ~1 year of data
 data = StockData.from_yfinance(["AAPL"], days_before=365)
 
 # Use a built-in fixed-size strategy (RSI momentum)
@@ -64,6 +63,27 @@ def sma_crossover_fixed(data):
         return "hold"
 ```
 
+You can either calculate your own indicator results or use built-in functions to calculate them
+Here is an alternative to the previous code:
+
+```Python
+# This code adds the indicators
+# Code this part before running your bactesting
+data.add_indicator(calculate_sma, "close", 20)
+data.add_indicator(calculate_sma, "close", 50)
+
+# Then your strategy becomes
+
+def sma_crossover_fixed(data):
+
+    if data["sma_20"].iloc[-1] > data["sma_50"].iloc[-1]:
+        return "buy"
+    elif data["sma_20"].iloc[-1] < data["sma_50"].iloc[-1]:
+        return "sell"
+    else:
+        return "hold"
+```
+
 Usage:
 
 ```Python
@@ -83,9 +103,11 @@ bt.run_backtest_fixed()
 Minimal custom dynamic strategy
 
 ```Python
+# Add the following for built-in rsi calculation
+data.add_indicator(calculate_rsi, "close", 14)
+
 def rsi_dynamic(data, holdings):
-    rsi = Strategy.rsi(data["Close"], period=14)  # or your own RSI logic
-    latest = rsi.iloc[-1]
+    latest = data["rsi_14"].iloc[-1]
 
     if latest < 30:
         return "buy", 10      # accumulate
@@ -105,6 +127,8 @@ bt.run_backtest_dynamic()
 ## Useful shortcuts
 
 - Built-in strategies live in Strategy
+- Built-in indicators live in Indicators
+    - You can implement them directly through add_indicator() from StockData
 - Fixed: run_backtest_fixed()
 - Dynamic: run_backtest_dynamic()
 - Visuals: Visualize(bt).visualize_backtest()
@@ -121,4 +145,4 @@ bt.run_backtest_dynamic()
 
 If you are unsure start with fixed.
 
-## See the docs for deeper guide and more advanced features
+## See the rest of the docs for deeper guide and more advanced features

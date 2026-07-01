@@ -1,7 +1,14 @@
-# src/stocksimpy/performance.py
+# src/stocksimpy/utils/performance.py
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+
+if TYPE_CHECKING:
+    from stocksimpy.core.backtester import Backtester
 
 
 class Performance:
@@ -46,9 +53,9 @@ class Performance:
     >>> perf = Performance(btres.portfolio, risk_free_rate=0.02)
     >>> report = perf.generate_risk_report()
     >>> print(f"Sharpe Ratio: {report['Sharpe Ratio']:.2f}")
-    
+
     or using the BacktestResult shortcut:
-    
+
     >>> bt = Backtester('MSFT', stock_data, strategy)
     >>> btres = bt.run()
     >>> perf = btres.get_performance()
@@ -60,8 +67,8 @@ class Performance:
         self.portfolio = portfolio
         self.symbol = portfolio.symbol
         self.risk_free_rate = risk_free_rate
-        
-    def change_risk_free_rate(self, new_rate: float):
+
+    def change_risk_free_rate(self, new_rate: float) -> None:
         """
         Update the annual risk-free rate used in calculations.
 
@@ -217,7 +224,7 @@ class Performance:
 
         return max_drawdown
 
-    def calc_sharpe_ratio(self, risk_free_rate: float = None) -> float:
+    def calc_sharpe_ratio(self, risk_free_rate: float = -1) -> float:
         """
         Calculate the annualized Sharpe ratio.
 
@@ -251,10 +258,8 @@ class Performance:
         >>> if sharpe > 1.0:
         ...     print("Good risk-adjusted performance")
         """
-        risk_free_rate = (
-            self.risk_free_rate if risk_free_rate is None else risk_free_rate
-        )
-        
+        risk_free_rate = self.risk_free_rate if risk_free_rate == -1 else risk_free_rate
+
         daily_returns = self.calc_daily_returns()
 
         if daily_returns.empty or daily_returns.std() == 0:
@@ -265,9 +270,7 @@ class Performance:
 
         # 2. Adjust annual risk-free rate to daily rate
         # Daily risk-free rate = (1 + R)^(1/T) - 1
-        daily_risk_free_rate = (1 + risk_free_rate) ** (
-            1 / annualization_factor
-        ) - 1
+        daily_risk_free_rate = (1 + risk_free_rate) ** (1 / annualization_factor) - 1
 
         # 3. Calculate the daily Sharpe Ratio
         sharpe_ratio = (
@@ -278,16 +281,14 @@ class Performance:
         return sharpe_ratio * np.sqrt(annualization_factor)
 
     # TODO: for future implementation, the current version is not correct
-    def calc_sortino_ratio(self, risk_free_rate: float = None) -> float:
+    def calc_sortino_ratio(self, risk_free_rate: float = -1) -> float:
         """ """
         daily_returns = self.calc_daily_returns()
 
         if daily_returns.empty:
             return 0.0
 
-        risk_free_rate = (
-            self.risk_free_rate if risk_free_rate is None else risk_free_rate
-        )
+        risk_free_rate = self.risk_free_rate if risk_free_rate == -1 else risk_free_rate
 
         annualization_factor = self._get_annualized_trading_days()
 

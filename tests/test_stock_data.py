@@ -235,3 +235,114 @@ def test_check_missing(sample_valid_df):
     stock_data = StockData(sample_valid_df)
     missing_count = stock_data.check_missing()
     assert all(count == 0 for count in missing_count)
+
+
+def test_add_single_indicator(sample_valid_df):
+    """Test addition of a single indicator when an indicator column exists.
+
+    The updated `add_indicator` requires the target indicator column to exist
+    in the DataFrame. When `overwrite=True` the existing column is replaced
+    with the calculated values.
+    """
+
+    def sma(series, window):
+        return {f"sma_{window}": series.rolling(window).mean()}
+
+    stock_data = StockData(sample_valid_df)
+
+    # Populate it using add_indicator with overwrite=True
+    stock_data.add_indicator(sma, 3, overwrite=True)
+
+    expected = stock_data.df[("Close", "")].rolling(3).mean()
+
+    pd.testing.assert_series_equal(
+        stock_data.df[("sma_3", "")], expected, check_names=False
+    )
+
+
+def test_add_multiple_indicators(sample_valid_df):
+    """Test adding multiple indicators when columns exist.
+
+    `add_indicator` will only write into pre-existing indicator columns and
+    requires `overwrite=True` to replace them.
+    """
+
+    def bands(series, window):
+        sma = series.rolling(window).mean()
+        std = series.rolling(window).std()
+        return {
+            f"bb_upper_{window}": sma + 2 * std,
+            f"bb_lower_{window}": sma - 2 * std,
+        }
+
+    stock_data = StockData(sample_valid_df)
+
+    stock_data.add_indicator(bands, 2, base_col="Close", overwrite=True)
+
+    assert ("bb_upper_2", "") in stock_data.df.columns
+    assert ("bb_lower_2", "") in stock_data.df.columns
+
+
+def test_add_indicator_symbol_missing_raises(sample_valid_df):
+    """Specifying a non-existent symbol should raise KeyError."""
+
+    def sma(series, window):
+        return {f"sma_{window}": series.rolling(window).mean()}
+
+    stock_data = StockData(sample_valid_df)
+
+    with pytest.raises(KeyError, match="does NOT exist"):
+        stock_data.add_indicator(sma, 3, base_col="Close", symbol="AAPL")
+
+
+def test_add_indicator_non_dict_return_raises(sample_valid_df):
+    """Indicator function must return a dict; otherwise TypeError is raised."""
+
+    def bad(series, window):
+        # returns a Series instead of dict
+        return series.rolling(window).mean()
+
+    stock_data = StockData(sample_valid_df)
+
+    with pytest.raises(TypeError):
+        stock_data.add_indicator(bad, 2, overwrite=True)
+
+
+def test_add_indicator_invalid_indicator_type_raises(sample_valid_df):
+    """Passing an invalid `indicator` type raises TypeError."""
+
+    stock_data = StockData(sample_valid_df)
+
+    with pytest.raises(TypeError, match="type can only be str or callable"):
+        stock_data.add_indicator(123, 3, base_col="Close")
+
+
+def test_add_indicator_base_sma(sample_valid_df):
+    stock_data = StockData(sample_valid_df)
+
+    stock_data.add_indicator("sma", 3)
+
+    assert "sma_3" in stock_data.df
+
+
+def test_all_indicator():
+    stock_data = StockData().generate_mock_data(50)
+
+    stock_data.add_indicator_all("")
+
+    assert "tema_14" in stock_data.df
+
+
+def test_all_indicator_invalid_key():
+    stock_data = StockData().generate_mock_data(50)
+
+    with pytest.raises(KeyError):
+        stock_data.add_indicator_all("null")
+
+
+def test_add_indicator_base_macd():
+    stock_data = StockData.generate_mock_data()
+
+    stock_data.add_indicator("macd")
+
+    assert "macd_line" in stock_data.df

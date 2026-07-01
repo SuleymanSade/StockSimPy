@@ -1,4 +1,8 @@
-# src/stocksimpy/strategy.py
+# src/stocksimpy/addons/strategy.py
+
+from __future__ import annotations
+
+from typing import Callable, Tuple
 
 import pandas as pd
 
@@ -21,7 +25,8 @@ class Strategy:
     directly in Backtester instances for quick experimentation.
     """
 
-    def buy_all():
+    @staticmethod
+    def buy_all_fixed() -> Callable[[pd.DataFrame], str]:
         """
         Always-return-buy fixed-size strategy.
 
@@ -40,8 +45,8 @@ class Strategy:
 
         return strategy
 
-    
-    def price_action_dynamic():
+    @staticmethod
+    def price_action_dynamic() -> Callable[[pd.DataFrame, float], tuple[str, int]]:
         """
         Create a simple price-action dynamic strategy.
 
@@ -62,7 +67,7 @@ class Strategy:
         - If insufficient data (< 30 points), always returns ``('hold', 0)``.
         """
 
-        def strategy(data: pd.DataFrame, holdings: float) -> tuple:
+        def strategy(data: pd.DataFrame, holdings: float) -> tuple[str, int]:
             # Extract close prices robustly (supports MultiIndex or single-level)
             close_prices = None
             if isinstance(data.columns, pd.MultiIndex):
@@ -101,7 +106,8 @@ class Strategy:
 
         return strategy
 
-    def rsi_momentum(rsi_period: int = 14):
+    @staticmethod
+    def rsi_momentum_fixed(rsi_period: int = 14) -> Callable[[pd.DataFrame], str]:
         """
         RSI momentum crossover fixed-size strategy.
 
@@ -161,7 +167,10 @@ class Strategy:
 
         return strategy
 
-    def sma_ema_crossover(fast: int = 12, slow: int = 26):
+    @staticmethod
+    def sma_ema_crossover_fixed(
+        fast: int = 12, slow: int = 26
+    ) -> Callable[[pd.DataFrame], str]:
         """
         SMA crossover strategy.
 
@@ -216,9 +225,10 @@ class Strategy:
 
         return strategy
 
-    def rsi_reversion(
+    @staticmethod
+    def rsi_reversion_fixed(
         rsi_period: int = 14, low_th: float = 30, high_th: float = 70
-    ):
+    ) -> Callable[[pd.DataFrame], str]:
         """
         RSI mean-reversion strategy.
         Parameters
@@ -273,7 +283,10 @@ class Strategy:
 
         return strategy
 
-    def multi_indicator(rsi_period: int = 14, sma_long: int = 200):
+    @staticmethod
+    def multi_indicator_fixed(
+        rsi_period: int = 14, sma_long: int = 200
+    ) -> Callable[[pd.DataFrame], str]:
         """
         Multi-indicator confirmation strategy.
 
@@ -336,8 +349,10 @@ class Strategy:
 
         return strategy
 
-    
-    def breakout_dynamic(lookback: int = 20, allocation: float = 20000):
+    @staticmethod
+    def breakout_dynamic(
+        lookback: int = 20, allocation: float = 20000
+    ) -> Callable[[pd.DataFrame, float], tuple[str, int]]:
         """
         Breakout dynamic strategy.
 
@@ -364,7 +379,7 @@ class Strategy:
         Shares are computed as ``int(allocation / price)``.
         """
 
-        def strategy(data: pd.DataFrame, holdings: float) -> tuple:
+        def strategy(data: pd.DataFrame, holdings: float) -> tuple[str, int]:
             if isinstance(data.columns, pd.MultiIndex):
                 close = data.iloc[
                     :, data.columns.get_level_values(0) == "Close"
@@ -390,12 +405,13 @@ class Strategy:
 
         return strategy
 
+    @staticmethod
     def atr_trend_dynamic(
         ma_period: int = 20,
         atr_period: int = 14,
         k: float = 1.5,
         allocation: float = 20000,
-    ):
+    ) -> Callable[[pd.DataFrame, float], tuple[str, int]]:
         """
         ATR-based dynamic trend-following strategy.
 
@@ -429,7 +445,7 @@ class Strategy:
         Requires ``max(ma_period, atr_period) + 2`` data points.
         """
 
-        def strategy(data: pd.DataFrame, holdings: float) -> tuple:
+        def strategy(data: pd.DataFrame, holdings: float) -> tuple[str, int]:
             if isinstance(data.columns, pd.MultiIndex):
                 close = data.iloc[
                     :, data.columns.get_level_values(0) == "Close"

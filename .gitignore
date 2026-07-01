@@ -1,4 +1,6 @@
 docs/build/
+docs/_build/
+venv/
 .venv/
 __pycache__/
 *.pyc
@@ -6,3 +8,7 @@ __pycache__/
 .eggs
 dist/
 *.egg-info/
+.mypy_cache/
+.vscode/
+build
+.gitignore
